@@ -1,0 +1,38 @@
+{% extends "core/base_distributor.html" %}
+{% block title %}Bills & Invoices — Hardik International{% endblock %}
+{% block content %}
+<div class="row mb-3">
+  <div class="col-sm-4"><div class="card text-center"><div class="card-body"><div class="subheader">Total Invoices</div><div class="h1">{{ totals.count }}</div></div></div></div>
+  <div class="col-sm-4"><div class="card text-center"><div class="card-body"><div class="subheader">Total Paid</div><div class="h1 text-success">₹{{ totals.paid }}</div></div></div></div>
+  <div class="col-sm-4"><div class="card text-center"><div class="card-body"><div class="subheader">Outstanding</div><div class="h1 text-danger">₹{{ totals.unpaid }}</div></div></div></div>
+</div>
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Invoices</h3>
+    <div class="card-options">
+      <form class="d-flex gap-2">
+        <input type="text" name="search" class="form-control form-control-sm" placeholder="Search invoice…" value="{{ search }}">
+        <button class="btn btn-sm btn-primary">Search</button>
+      </form>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-vcenter card-table">
+      <thead><tr><th>Invoice No.</th><th>Invoice Date</th><th>Due Date</th><th>Amount</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for inv in invoices %}
+          <tr>
+            <td>{{ inv.invoice_number }}</td>
+            <td>{{ inv.invoice_date }}</td>
+            <td>{{ inv.due_date }}</td>
+            <td>₹{{ inv.amount }}</td>
+            <td><span class="badge bg-{% if inv.status == 'paid' %}success{% elif inv.status == 'overdue' %}danger{% elif inv.status == 'partial' %}warning{% else %}secondary{% endif %}">{{ inv.get_status_display }}</span></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-center text-muted">No invoices yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

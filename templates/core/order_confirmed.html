@@ -1,0 +1,27 @@
+{% extends "core/base_distributor.html" %}
+{% block title %}Order Confirmed — Hardik International{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card text-center">
+      <div class="card-body py-5">
+        <div class="mb-3 text-success">
+          <i class="ti ti-circle-check" style="font-size:4rem;"></i>
+        </div>
+        <h2 class="mb-1">Order Placed Successfully!</h2>
+        <p class="text-muted mb-4">Your order <strong>{{ order.order_id }}</strong> has been confirmed.</p>
+        <div class="row text-start mb-4">
+          <div class="col-6"><strong>Order ID</strong><br>{{ order.order_id }}</div>
+          <div class="col-6"><strong>Date</strong><br>{{ order.order_date }}</div>
+          <div class="col-6 mt-3"><strong>Amount</strong><br>₹{{ order.total_amount }}</div>
+          <div class="col-6 mt-3"><strong>Status</strong><br>{{ order.get_status_display }}</div>
+        </div>
+        <div class="d-flex gap-2 justify-content-center">
+          <a href="{% url 'order_history' %}" class="btn btn-outline-primary">View Order History</a>
+          <a href="{% url 'place_order' %}" class="btn btn-primary">Place Another Order</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

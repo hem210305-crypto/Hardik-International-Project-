@@ -1,0 +1,980 @@
+{% extends "core/base_admin.html" %}
+{% block title %}Distributors Management — Hardik International{% endblock %}
+{% block page_header %}{% endblock %}
+
+{% block content %}
+<style>
+  /* Base customisations */
+  .btn-pill {
+    border-radius: 50rem !important;
+  }
+
+  .fs-7 {
+    font-size: 0.85rem;
+  }
+
+  /* Status Badges */
+  .badge-status {
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: 0.35rem 0.65rem;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    letter-spacing: 0.02em;
+    color: #fff !important;
+  }
+
+  .badge-active {
+    background-color: #28a745 !important;
+  }
+
+  .badge-inactive {
+    background-color: #dc3545 !important;
+  }
+
+  .badge-suspended {
+    background-color: #dc3545 !important;
+  }
+
+  /* Distributor Card Layout */
+  .card-distributor {
+    transition: box-shadow 0.2s ease-in-out;
+    margin-bottom: 1rem;
+  }
+
+  .card-distributor:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .details-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 0;
+    margin-top: 1.5rem;
+  }
+
+  .details-grid-item {
+    width: 50%;
+    color: #6c757d;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Action Buttons */
+  .action-btn {
+    padding: 0.3rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    justify-content: flex-start;
+    margin-bottom: 0.5rem;
+  }
+
+  .action-btn i {
+    font-size: 1rem;
+  }
+
+  .action-btn:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Title layout */
+  .page-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+</style>
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+{% endblock %}
+
+<div class="container-xl py-4" style="background: transparent;">
+
+  <!-- Header Row -->
+  <div class="page-header-row mb-4">
+    <div>
+      <h2 class="mb-1 text-dark fw-bold fs-2" style="font-family: inherit;">Distributors Management</h2>
+      <div class="text-muted" style="font-size: 0.9rem;">Manage distributor accounts and permissions</div>
+    </div>
+    <div>
+      <button type="button" class="btn btn-danger text-white fw-bold px-3 shadow-sm rounded-2" data-bs-toggle="modal"
+        data-bs-target="#addModal" style="background-color: #f03e3e; border-color: #f03e3e;">
+        + Add New Distributor
+      </button>
+    </div>
+  </div>
+
+  <!-- Search and Filter Bar -->
+  <div class="card mb-4 border border-light-subtle shadow-sm rounded-3">
+    <form method="get" class="card-body p-3 d-flex align-items-center justify-content-between m-0">
+      <div class="input-icon" style="width: 45%;">
+        <span class="input-icon-addon">
+          <i class="ti ti-search text-muted"></i>
+        </span>
+        <input type="text" name="q" value="{{ request.GET.q }}" class="form-control bg-light border-0"
+          placeholder="Search by name, ID, or location..." style="font-size: 0.9rem;">
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+        <select name="status" class="form-select bg-white text-dark rounded-pill px-3 fs-7 border-light-subtle"
+          style="width: 140px; cursor: pointer;">
+          <option value="">All Status</option>
+          <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+          <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+          <option value="suspended" {% if request.GET.status == 'suspended' %}selected{% endif %}>Suspended</option>
+        </select>
+        <button type="submit"
+          class="btn btn-outline-secondary bg-white text-dark rounded-pill px-4 fs-7 border-light-subtle">
+          Filter
+        </button>
+        {% if request.GET.q or request.GET.status %}
+        <a href="{% url 'admin_distributors' %}" class="btn btn-link text-muted fs-7 text-decoration-none">Clear</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Distributors List -->
+  <div class="d-flex flex-column mb-4">
+    {% for d in distributors %}
+    <div class="card card-distributor border border-light-subtle shadow-sm rounded-3">
+      <div class="card-body p-4 d-flex">
+
+        <!-- Left: Details -->
+        <div class="pe-4" style="flex: 2; border-right: 1px solid #f1f3f5;">
+          <div class="d-flex align-items-center mb-1">
+            <h3 class="mb-0 me-3 text-dark fw-bold fs-3">{{ d.business_name }}</h3>
+
+            {% if d.status|lower == 'active' %}
+            <span class="badge badge-status badge-active rounded-pill">
+              <i class="ti ti-circle-check me-1"></i> Active
+            </span>
+            {% elif d.status|lower == 'inactive' %}
+            <span class="badge badge-status badge-inactive rounded-pill">
+              <i class="ti ti-player-pause me-1"></i> Inactive
+            </span>
+            {% elif d.status|lower == 'suspended' %}
+            <span class="badge badge-status badge-suspended rounded-pill">
+              <i class="ti ti-circle-x me-1"></i> Suspended
+            </span>
+            {% else %}
+            <span class="badge badge-status badge-inactive rounded-pill">
+              {{ d.status|default:"Unknown"|title }}
+            </span>
+            {% endif %}
+          </div>
+
+          <div class="text-muted font-monospace text-uppercase" style="font-size: 0.8rem;">{{ d.code }}</div>
+
+          <div class="details-grid">
+            <div class="details-grid-item">
+              <i class="ti ti-mail me-2 fs-5"></i> {{ d.email }}
+            </div>
+            <div class="details-grid-item">
+              <i class="ti ti-phone me-2 fs-5"></i> {{ d.phone }}
+            </div>
+            <div class="details-grid-item">
+              <i class="ti ti-map-pin me-2 fs-5"></i> {{ d.location }}
+            </div>
+            <div class="details-grid-item text-muted">
+              Joined: {{ d.joined_on|date:"Y-m-d" }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Middle: Financials -->
+        <div class="px-5 d-flex flex-column justify-content-center" style="flex: 1.3;">
+          <div class="mb-4">
+            <div class="text-muted fs-7 mb-1">Credit Limit</div>
+            <div class="fs-4 fw-bold text-success currency-val">₹{{ d.credit_limit|floatformat:"0"|default:"0" }}</div>
+          </div>
+          <div>
+            <div class="text-muted fs-7 mb-1">Outstanding</div>
+            <div class="fs-4 fw-bold text-danger currency-val">₹{{ d.current_outstanding|floatformat:"0"|default:"0" }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Actions -->
+        <div class="ps-3 d-flex flex-column justify-content-center" style="width: 130px;">
+          <button type="button" class="btn btn-outline-secondary rounded-2 action-btn bg-white text-dark w-100"
+            data-bs-toggle="modal" data-bs-target="#viewModal"
+            onclick="fillViewModal('{{ d.business_name|escapejs }}', '{{ d.code|escapejs }}', '{{ d.email|escapejs }}', '{{ d.phone|escapejs }}', '{{ d.location|escapejs }}', '{{ d.joined_on|date:'Y-m-d' }}', '{{ d.credit_limit|floatformat:'0' }}')">
+            <i class="ti ti-eye me-2"></i> View
+          </button>
+          <button type="button" class="btn btn-outline-secondary rounded-2 action-btn bg-white text-dark w-100"
+            data-bs-toggle="modal" data-bs-target="#editModal"
+            onclick="fillEditModal('{{ d.id }}', '{{ d.business_name|escapejs }}', '{{ d.owner_name|escapejs }}', '{{ d.phone|escapejs }}', '{{ d.status }}', '{{ d.credit_limit|floatformat:'0' }}', '{{ d.payment_terms_days }}')">
+            <i class="ti ti-edit me-2"></i> Edit
+          </button>
+          <form method="post" style="margin:0;"
+            onsubmit="return confirm('Are you sure you want to delete this distributor?');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="distributor_id" value="{{ d.id }}">
+            <button type="submit" class="btn btn-outline-danger rounded-2 action-btn w-100">
+              <i class="ti ti-trash me-2 text-danger"></i> Delete
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+    {% empty %}
+    <div class="card border-0 shadow-sm rounded-3">
+      <div class="card-body text-center py-5 text-muted">
+        <i class="ti ti-users fs-1 mb-3 d-block"></i>
+        <h4>No distributors found</h4>
+        <p>Get started by adding your first distributor.</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="d-flex gap-3 mb-4">
+    <div class="card flex-fill border border-light-subtle shadow-sm rounded-3">
+      <div class="card-body p-3">
+        <div class="text-muted fs-7 mb-2">Active Distributors</div>
+        <div class="fs-2 fw-bold text-success">{{ totals.active }}</div>
+      </div>
+    </div>
+    <div class="card flex-fill border border-light-subtle shadow-sm rounded-3">
+      <div class="card-body p-3">
+        <div class="text-muted fs-7 mb-2">Inactive Distributors</div>
+        <div class="fs-2 fw-bold text-secondary">{{ totals.inactive }}</div>
+      </div>
+    </div>
+    <div class="card flex-fill border border-light-subtle shadow-sm rounded-3">
+      <div class="card-body p-3">
+        <div class="text-muted fs-7 mb-2">Suspended Distributors</div>
+        <div class="fs-2 fw-bold text-danger">{{ totals.suspended }}</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Script to format Indian Currency on the client side perfectly matching mockup -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const formatIndianRupee = (num) => {
+      let x = num.toString();
+      let lastThree = x.substring(x.length - 3);
+      let otherNumbers = x.substring(0, x.length - 3);
+      if (otherNumbers != '') lastThree = ',' + lastThree;
+      return otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + lastThree;
+    };
+
+    document.querySelectorAll('.currency-val').forEach(el => {
+      let text = el.innerText.trim();
+      if (text.startsWith('₹')) {
+        let numStr = text.substring(1).replace(/,/g, '');
+        let num = parseInt(numStr);
+        if (!isNaN(num)) {
+          el.innerText = '₹' + formatIndianRupee(num);
+        }
+      }
+    });
+  });
+</script>
+
+<!-- View Modal -->
+<div class="modal modal-blur fade" id="viewModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0 pb-0 pt-4 px-4 d-flex align-items-start">
+        <div class="d-flex align-items-center">
+          <div class="bg-danger-lt text-danger rounded d-flex align-items-center justify-content-center me-3"
+            style="width: 48px; height: 48px;">
+            <i class="ti ti-address-book fs-2"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fs-3 fw-bold mb-1">Distributor Details</h5>
+            <div class="text-muted fs-7">Comprehensive overview of the distributor account</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="alert alert-info bg-azure-lt border-0 text-azure mb-4 d-flex align-items-start p-3">
+          <i class="ti ti-info-circle fs-3 me-3 mt-1"></i>
+          <div>
+            <strong class="d-block mb-1">Contact & Operations</strong>
+            <span class="fs-7 opacity-75">Primary contact details and location information.</span>
+          </div>
+        </div>
+        <div class="card bg-light border-0 mb-4">
+          <div class="card-body p-4 d-flex align-items-center justify-content-between">
+            <div>
+              <h3 id="viewBusName" class="text-dark fw-bold mb-1 fs-3"></h3>
+              <span id="viewCode" class="badge bg-white text-muted border px-2 py-1 fs-7"></span>
+            </div>
+            <div class="text-end">
+              <div class="text-muted fs-7 mb-1">Approved Credit Limit</div>
+              <strong class="text-success fs-4" id="viewCredit"></strong>
+            </div>
+          </div>
+        </div>
+        <div class="row g-4 px-2 fs-7">
+          <div class="col-md-6 d-flex align-items-center">
+            <div class="bg-white rounded shadow-sm border p-2 me-3 text-muted"><i class="ti ti-mail fs-4"></i></div>
+            <div>
+              <div class="text-muted mb-1" style="font-size: 0.75rem;">Email Address</div><strong class="text-dark"
+                id="viewEmail"></strong>
+            </div>
+          </div>
+          <div class="col-md-6 d-flex align-items-center">
+            <div class="bg-white rounded shadow-sm border p-2 me-3 text-muted"><i class="ti ti-phone fs-4"></i></div>
+            <div>
+              <div class="text-muted mb-1" style="font-size: 0.75rem;">Phone Number</div><strong class="text-dark"
+                id="viewPhone"></strong>
+            </div>
+          </div>
+          <div class="col-md-6 d-flex align-items-center">
+            <div class="bg-white rounded shadow-sm border p-2 me-3 text-muted"><i class="ti ti-map-pin fs-4"></i></div>
+            <div>
+              <div class="text-muted mb-1" style="font-size: 0.75rem;">Location</div><strong class="text-dark"
+                id="viewAddress"></strong>
+            </div>
+          </div>
+          <div class="col-md-6 d-flex align-items-center">
+            <div class="bg-white rounded shadow-sm border p-2 me-3 text-muted"><i class="ti ti-calendar fs-4"></i></div>
+            <div>
+              <div class="text-muted mb-1" style="font-size: 0.75rem;">Joined Date</div><strong class="text-dark"
+                id="viewJoined"></strong>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 pb-4 px-4 bg-light rounded-bottom mt-2">
+        <button type="button" class="btn btn-outline-secondary rounded-pill px-4 ms-auto" data-bs-dismiss="modal">Close
+          Window</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal modal-blur fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="edit">
+        <input type="hidden" name="distributor_id" id="editDistId">
+        <div class="modal-header border-0 pb-0 pt-4 px-4 d-flex align-items-start">
+          <div class="d-flex align-items-center">
+            <div class="bg-danger-lt text-danger rounded d-flex align-items-center justify-content-center me-3"
+              style="width: 48px; height: 48px;">
+              <i class="ti ti-edit fs-2"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fs-3 fw-bold mb-1">Edit Distributor</h5>
+              <div class="text-muted fs-7">Modify the details of this distributor account</div>
+            </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="alert alert-info bg-azure-lt border-0 text-azure mb-4 d-flex align-items-start p-3">
+            <i class="ti ti-info-circle fs-3 me-3 mt-1"></i>
+            <div>
+              <strong class="d-block mb-1">Update Information</strong>
+              <span class="fs-7 opacity-75">Modify core business details. Critical details should be updated via
+                individual sections.</span>
+            </div>
+          </div>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label-custom">Business Name</label>
+              <input type="text" name="business_name" id="editBusName" class="form-control bg-light border-0" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-custom">Owner Name</label>
+              <input type="text" name="owner_name" id="editOwnerName" class="form-control bg-light border-0" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-custom">Phone</label>
+              <input type="text" name="phone" id="editPhone" class="form-control bg-light border-0" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-custom">Credit Limit (₹)</label>
+              <input type="number" name="credit_limit" id="editCredit" class="form-control bg-light border-0" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-custom">Payment Terms (Days)</label>
+              <input type="number" name="payment_terms_days" id="editTerms" class="form-control bg-light border-0"
+                required>
+            </div>
+            <div class="col-12">
+              <label class="form-label-custom">Account Status</label>
+              <select name="status" id="editStatus" class="form-select bg-light border-0">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pb-4 px-4 bg-light rounded-bottom mt-2">
+          <button type="button" class="btn btn-link text-muted text-decoration-none"
+            data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm"
+            style="background-color: #f03e3e; border-color: #f03e3e;">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function fillViewModal(name, code, email, phone, addr, joined, credit) {
+    document.getElementById('viewBusName').innerText = name;
+    document.getElementById('viewCode').innerText = code;
+    document.getElementById('viewEmail').innerText = email;
+    document.getElementById('viewPhone').innerText = phone;
+    document.getElementById('viewAddress').innerText = addr;
+    document.getElementById('viewJoined').innerText = joined;
+
+    // Format credit
+    let val = parseInt(credit) || 0;
+    let x = val.toString();
+    let lastThree = x.substring(x.length - 3);
+    let otherNumbers = x.substring(0, x.length - 3);
+    if (otherNumbers != '') lastThree = ',' + lastThree;
+    document.getElementById('viewCredit').innerText = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + lastThree;
+  }
+
+  function fillEditModal(id, name, owner, phone, status, credit, terms) {
+    document.getElementById('editDistId').value = id;
+    document.getElementById('editBusName').value = name;
+    document.getElementById('editOwnerName').value = owner;
+    document.getElementById('editPhone').value = phone;
+    document.getElementById('editStatus').value = status;
+    document.getElementById('editCredit').value = credit;
+    document.getElementById('editTerms').value = terms;
+  }
+</script>
+
+<!-- Add Modal -->
+<style>
+  .step-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1;
+    flex: 1;
+    position: relative;
+  }
+
+  .step-item::after {
+    content: '';
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    width: 100%;
+    height: 2px;
+    background-color: #f1f3f5;
+    z-index: -1;
+  }
+
+  .step-item:last-child::after {
+    display: none;
+  }
+
+  .step-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 2px solid #dee2e6;
+    color: #adb5bd;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    transition: all 0.3s;
+  }
+
+  .step-text {
+    font-size: 0.75rem;
+    color: #adb5bd;
+    font-weight: 500;
+  }
+
+  .step-item.active .step-circle {
+    border-color: #f03e3e;
+    color: #f03e3e;
+  }
+
+  .step-item.active .step-text {
+    color: #f03e3e;
+  }
+
+  .step-item.completed .step-circle {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white;
+  }
+
+  .step-item.completed .step-text {
+    color: #28a745;
+  }
+
+  .step-item.completed::after {
+    background-color: #28a745;
+  }
+
+  .step-pane {
+    display: none;
+    min-height: 340px;
+  }
+
+  .step-pane.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .form-label-custom {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+  }
+
+  .required-ast {
+    color: #f03e3e;
+  }
+</style>
+
+<div class="modal modal-blur fade" id="addModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <form method="post" id="addDistributorForm">
+        {% csrf_token %}
+        <div class="modal-header border-0 pb-0 pt-4 px-4 d-flex align-items-start">
+          <div class="d-flex align-items-center">
+            <div class="bg-danger-lt text-danger rounded d-flex align-items-center justify-content-center me-3"
+              style="width: 48px; height: 48px;">
+              <i class="ti ti-building-store fs-2"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fs-3 fw-bold mb-1">Add New Distributor</h5>
+              <div class="text-muted fs-7">Create a new distributor account with complete information</div>
+            </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body pt-4 px-4 pb-0">
+          <!-- Progress bar and steps -->
+          <div class="d-flex justify-content-between text-muted fs-7 mb-2">
+            <span id="stepCounter" class="fw-medium">Step 1 of 5</span>
+            <span id="stepPercentage" class="text-danger fw-bold">20% Complete</span>
+          </div>
+          <div class="progress progress-sm mb-4 bg-light">
+            <div class="progress-bar" id="progressBar" style="width: 20%; background-color: #f03e3e;"></div>
+          </div>
+
+          <div class="d-flex justify-content-between mb-4 position-relative step-indicators">
+            <div class="step-item active" id="si-1">
+              <div class="step-circle"><i class="ti ti-id"></i></div>
+              <div class="step-text">Basic Info</div>
+            </div>
+            <div class="step-item" id="si-2">
+              <div class="step-circle"><i class="ti ti-map-pin"></i></div>
+              <div class="step-text">Address</div>
+            </div>
+            <div class="step-item" id="si-3">
+              <div class="step-circle"><i class="ti ti-file-description"></i></div>
+              <div class="step-text">Business Details</div>
+            </div>
+            <div class="step-item" id="si-4">
+              <div class="step-circle"><i class="ti ti-currency-rupee"></i></div>
+              <div class="step-text">Financial</div>
+            </div>
+            <div class="step-item" id="si-5">
+              <div class="step-circle"><i class="ti ti-file-check"></i></div>
+              <div class="step-text">Bank & Review</div>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <!-- Step 1: Basic Info -->
+          <div class="step-pane active" id="step1">
+            <div class="alert alert-info bg-azure-lt border-0 text-azure mb-4 d-flex align-items-start p-3">
+              <i class="ti ti-info-circle fs-3 me-3 mt-1"></i>
+              <div>
+                <strong class="d-block mb-1">Basic Information</strong>
+                <span class="fs-7 opacity-75">Enter the primary contact points, owner and business names.</span>
+              </div>
+            </div>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label class="form-label-custom">Business Name <span class="required-ast">*</span></label>
+                <input type="text" name="business_name" class="form-control bg-light border-0" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label-custom">Owner Name <span class="required-ast">*</span></label>
+                <input type="text" name="owner_name" class="form-control bg-light border-0" required>
+              </div>
+              <div class="col-md-12">
+                <label class="form-label-custom">Email Address <span class="required-ast">*</span></label>
+                <input type="email" name="email" class="form-control bg-light border-0" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label-custom">Primary Phone <span class="required-ast">*</span></label>
+                <input type="text" name="phone" class="form-control bg-light border-0" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label-custom">Alternate Phone (Optional)</label>
+                <input type="text" name="alternate_phone" class="form-control bg-light border-0">
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Address -->
+          <div class="step-pane" id="step2">
+            <div class="alert alert-info bg-azure-lt border-0 text-azure mb-4 d-flex align-items-start p-3">
+              <i class="ti ti-map-pin fs-3 me-3 mt-1"></i>
+              <div>
+                <strong class="d-block mb-1">Address Details</strong>
+                <span class="fs-7 opacity-75">Provide the complete business address for billing and delivery.</span>
+              </div>
+            </div>
+            <div class="row g-3 mb-4">
+              <div class="col-12">
+                <label class="form-label-custom">Street Address <span class="required-ast">*</span></label>
+                <input type="text" name="street_address" class="form-control bg-light border-0" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label-custom">City <span class="required-ast">*</span></label>
+                <input type="text" name="city" class="form-control bg-light border-0" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label-custom">State <span class="required-ast">*</span></label>
+                <input type="text" name="state" class="form-control bg-light border-0" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label-custom">Pincode <span class="required-ast">*</span></label>
+                <input type="text" name="pincode" class="form-control bg-light border-0" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Business Details -->
+          <div class="step-pane" id="step3">
+            <div class="alert alert-info bg-azure-lt border-0 text-azure mb-4 d-flex align-items-start p-3">
+              <i class="ti ti-file-description fs-3 me-3 mt-1"></i>
+              <div>
+                <strong class="d-block mb-1">Business Registration</strong>
+                <span class="fs-7 opacity-75">Provide valid business licenses and registration details.</span>
+              </div>
+            </div>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label class="form-label-custom">GST Number</label>
+                <input type="text" name="gst_number" class="form-control bg-light border-0"
+                  placeholder="e.g. 22AAAAA0000A1Z5">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label-custom">Drug License Number <span class="required-ast">*</span></label>
+                <input type="text" name="drug_license_number" class="form-control bg-light border-0"
+                  placeholder="e.g. DL-ABC-12345" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label-custom">PAN Number</label>
+                <input type="text" name="pan_number" class="form-control bg-light border-0"
+                  placeholder="e.g. ABCDE1234F">
+              </div>
+              <div class="col-12 mt-4">
+                <div class="alert alert-warning bg-warning-lt border-0 text-warning d-flex align-items-start p-3 mb-0">
+                  <i class="ti ti-alert-triangle fs-3 me-3 mt-1"></i>
+                  <div>
+                    <strong class="d-block mb-1">Document Verification</strong>
+                    <span class="fs-7 opacity-75">Please verify all license numbers before submitting. Invalid licenses
+                      may delay account activation.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 4: Financial -->
+          <div class="step-pane" id="step4">
+            <div class="alert alert-info bg-azure-lt border-0 text-azure mb-4 d-flex align-items-start p-3">
+              <i class="ti ti-currency-rupee fs-3 me-3 mt-1"></i>
+              <div>
+                <strong class="d-block mb-1">Financial Terms</strong>
+                <span class="fs-7 opacity-75">Set credit limits and payment terms for this distributor.</span>
+              </div>
+            </div>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label class="form-label-custom">Credit Limit (₹) <span class="required-ast">*</span></label>
+                <input type="number" name="credit_limit" class="form-control bg-light border-0" value="500000" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label-custom">Payment Terms (Days)</label>
+                <input type="number" name="payment_terms_days" class="form-control bg-light border-0" value="30">
+              </div>
+              <div class="col-12 mt-4">
+                <div class="card bg-success-lt border border-success-subtle rounded-3">
+                  <div class="card-body p-3">
+                    <div class="d-flex align-items-center mb-3 text-success fw-bold">
+                      <i class="ti ti-circle-check me-2 fs-4"></i> Credit Summary
+                    </div>
+                    <div class="row">
+                      <div class="col-6">
+                        <div class="fs-7 text-success opacity-75 mb-1">Credit Limit</div>
+                        <div class="fs-4 fw-bold text-success">₹<span id="summaryCredit">5,00,000</span></div>
+                      </div>
+                      <div class="col-6">
+                        <div class="fs-7 text-success opacity-75 mb-1">Payment Terms</div>
+                        <div class="fs-4 fw-bold text-success"><span id="summaryTerms">30</span> Days</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 5: Bank & Review -->
+          <div class="step-pane" id="step5">
+            <div class="alert alert-info bg-azure-lt border-0 text-azure mb-4 d-flex align-items-start p-3">
+              <i class="ti ti-building-bank fs-3 me-3 mt-1"></i>
+              <div>
+                <strong class="d-block mb-1">Bank Details & Final Review</strong>
+                <span class="fs-7 opacity-75">Add banking information and review all details before submitting.</span>
+              </div>
+            </div>
+
+            <h6 class="fw-bold mb-3 d-flex align-items-center text-dark"><i
+                class="ti ti-building-bank text-muted me-2"></i> Bank Account Details (Optional)</h6>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label class="form-label-custom">Bank Name</label>
+                <input type="text" name="bank_name" class="form-control bg-light border-0">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label-custom">Account Number</label>
+                <input type="text" name="account_number" class="form-control bg-light border-0">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label-custom">IFSC Code</label>
+                <input type="text" name="ifsc_code" class="form-control bg-light border-0">
+              </div>
+            </div>
+
+            <h6 class="fw-bold mb-3 d-flex align-items-center text-dark"><i class="ti ti-note text-muted me-2"></i>
+              Additional Notes (Optional)</h6>
+            <div class="row g-3 mb-4">
+              <div class="col-12">
+                <textarea name="notes" class="form-control bg-light border-0" rows="2"
+                  placeholder="Any special instructions or notes about this distributor..."></textarea>
+              </div>
+            </div>
+
+            <div class="card border border-warning shadow-sm rounded-3 mb-4">
+              <div class="card-body p-4">
+                <div class="text-warning fw-bold mb-3 d-flex align-items-center fs-5">
+                  <i class="ti ti-clipboard-check me-2"></i> Review Details
+                </div>
+                <div class="row fs-7 text-muted gy-3">
+                  <div class="col-6">
+                    <div class="mb-1">Business Name</div>
+                    <strong class="text-dark fs-6" id="revBusinessName">-</strong>
+                  </div>
+                  <div class="col-6">
+                    <div class="mb-1">Owner Name</div>
+                    <strong class="text-dark fs-6" id="revOwnerName">-</strong>
+                  </div>
+                  <div class="col-6">
+                    <div class="mb-1">Email</div>
+                    <strong class="text-dark fs-6" id="revEmail">-</strong>
+                  </div>
+                  <div class="col-6">
+                    <div class="mb-1">Phone</div>
+                    <strong class="text-dark fs-6" id="revPhone">-</strong>
+                  </div>
+                  <div class="col-12">
+                    <div class="mb-1">Address</div>
+                    <strong class="text-dark fs-6" id="revAddress">-</strong>
+                  </div>
+                  <div class="col-6">
+                    <div class="mb-1">Drug License</div>
+                    <strong class="text-dark fs-6" id="revDrugLicense">-</strong>
+                  </div>
+                  <div class="col-6">
+                    <div class="mb-1">GST Number</div>
+                    <strong class="text-dark fs-6" id="revGST">-</strong>
+                  </div>
+                  <div class="col-6">
+                    <div class="mb-1">Credit Limit</div>
+                    <strong class="text-success fs-6" id="revCredit">₹0</strong>
+                  </div>
+                  <div class="col-6">
+                    <div class="mb-1">Payment Terms</div>
+                    <strong class="text-dark fs-6" id="revTerms">0 Days</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer border-0 pb-4 px-4 pt-2">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" id="btnPrev"
+            style="visibility: hidden;">Previous</button>
+          <div class="ms-auto d-flex align-items-center gap-3">
+            <button type="button" class="btn btn-link text-muted text-decoration-none p-0"
+              data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold" id="btnNext"
+              style="background-color: #f03e3e; border-color: #f03e3e;">Next Step</button>
+            <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold d-none" id="btnSubmit">Create
+              Distributor</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    let currentStep = 1;
+    const totalSteps = 5;
+    const icons = ['ti-id', 'ti-map-pin', 'ti-file-description', 'ti-currency-rupee', 'ti-file-check'];
+
+    function updateSteps() {
+      document.querySelectorAll('.step-pane').forEach(p => p.classList.remove('active'));
+      document.getElementById('step' + currentStep).classList.add('active');
+
+      for (let i = 1; i <= totalSteps; i++) {
+        const item = document.getElementById('si-' + i);
+        const circle = item.querySelector('.step-circle');
+        item.classList.remove('active', 'completed');
+
+        if (i < currentStep) {
+          item.classList.add('completed');
+          circle.innerHTML = '<i class="ti ti-check fs-5"></i>';
+        } else if (i === currentStep) {
+          item.classList.add('active');
+          circle.innerHTML = '<i class="ti ' + icons[i - 1] + ' fs-5"></i>';
+        } else {
+          circle.innerHTML = '<i class="ti ' + icons[i - 1] + ' fs-5"></i>';
+        }
+      }
+
+      const pct = ((currentStep) / totalSteps) * 100;
+      document.getElementById('progressBar').style.width = pct + '%';
+      document.getElementById('stepPercentage').innerText = Math.round(pct) + '% Complete';
+      document.getElementById('stepCounter').innerText = 'Step ' + currentStep + ' of ' + totalSteps;
+
+      const btnPrev = document.getElementById('btnPrev');
+      const btnNext = document.getElementById('btnNext');
+      const btnSubmit = document.getElementById('btnSubmit');
+
+      if (currentStep === 1) {
+        btnPrev.style.visibility = 'hidden';
+      } else {
+        btnPrev.style.visibility = 'visible';
+      }
+
+      if (currentStep === totalSteps) {
+        btnNext.classList.add('d-none');
+        btnSubmit.classList.remove('d-none');
+        updateReview();
+      } else {
+        btnNext.classList.remove('d-none');
+        btnSubmit.classList.add('d-none');
+      }
+    }
+
+    document.getElementById('btnNext').addEventListener('click', () => {
+      const currentPane = document.getElementById('step' + currentStep);
+      const inputs = currentPane.querySelectorAll('input[required]');
+      let valid = true;
+      inputs.forEach(input => {
+        if (!input.reportValidity()) {
+          valid = false;
+        }
+      });
+
+      if (valid && currentStep < totalSteps) {
+        currentStep++;
+        updateSteps();
+      }
+    });
+
+    document.getElementById('btnPrev').addEventListener('click', () => {
+      if (currentStep > 1) {
+        currentStep--;
+        updateSteps();
+      }
+    });
+
+    const formatIndianRupeeJS = (num) => {
+      let x = num.toString();
+      let lastThree = x.substring(x.length - 3);
+      let otherNumbers = x.substring(0, x.length - 3);
+      if (otherNumbers != '') lastThree = ',' + lastThree;
+      return otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + lastThree;
+    };
+
+    document.querySelector('input[name="credit_limit"]').addEventListener('input', function () {
+      const val = parseInt(this.value) || 0;
+      document.getElementById('summaryCredit').innerText = formatIndianRupeeJS(val);
+    });
+
+    document.querySelector('input[name="payment_terms_days"]').addEventListener('input', function () {
+      document.getElementById('summaryTerms').innerText = this.value || '0';
+    });
+
+    function updateReview() {
+      document.getElementById('revBusinessName').innerText = document.querySelector('[name="business_name"]').value || '-';
+      document.getElementById('revOwnerName').innerText = document.querySelector('[name="owner_name"]').value || '-';
+      document.getElementById('revEmail').innerText = document.querySelector('[name="email"]').value || '-';
+      document.getElementById('revPhone').innerText = document.querySelector('[name="phone"]').value || '-';
+
+      const street = document.querySelector('[name="street_address"]').value;
+      const city = document.querySelector('[name="city"]').value;
+      const state = document.querySelector('[name="state"]').value;
+      const pin = document.querySelector('[name="pincode"]').value;
+      document.getElementById('revAddress').innerText = (street ? street + ', ' : '') + city + ', ' + state + ' - ' + pin;
+
+      document.getElementById('revDrugLicense').innerText = document.querySelector('[name="drug_license_number"]').value || '-';
+      document.getElementById('revGST').innerText = document.querySelector('[name="gst_number"]').value || '-';
+
+      const limit = document.querySelector('[name="credit_limit"]').value;
+      document.getElementById('revCredit').innerText = '₹' + formatIndianRupeeJS(parseInt(limit || 0));
+      document.getElementById('revTerms').innerText = (document.querySelector('[name="payment_terms_days"]').value || 0) + ' Days';
+    }
+  });
+</script>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}
+{% endblock %}

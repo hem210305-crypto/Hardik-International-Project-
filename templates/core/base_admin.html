@@ -1,0 +1,109 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Hardik International — Admin{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=4">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+<div class="admin-layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+
+    <nav class="sidebar-nav">
+      <a href="{% url 'admin_dashboard' %}"    class="nav-item {% if section == 'dashboard' %}active{% endif %}">
+        <i class="ti ti-layout-dashboard fs-5"></i> Dashboard
+      </a>
+      <a href="{% url 'admin_distributors' %}" class="nav-item {% if section == 'distributors' %}active{% endif %}">
+        <i class="ti ti-users fs-5"></i> Distributors
+      </a>
+      <a href="{% url 'admin_products' %}"     class="nav-item {% if section == 'products' %}active{% endif %}">
+        <i class="ti ti-box fs-5"></i> Products
+      </a>
+      <a href="{% url 'admin_orders' %}"       class="nav-item {% if section == 'orders' %}active{% endif %}">
+        <i class="ti ti-shopping-cart fs-5"></i> Orders
+      </a>
+      <a href="{% url 'admin_invoices' %}"     class="nav-item {% if section == 'invoices' %}active{% endif %}">
+        <i class="ti ti-file-invoice fs-5"></i> Invoices
+      </a>
+      <a href="{% url 'admin_announcements' %}" class="nav-item {% if section == 'announcements' %}active{% endif %}">
+        <i class="ti ti-speakerphone fs-5"></i> Announcements
+      </a>
+      <a href="{% url 'admin_staff' %}"        class="nav-item {% if section == 'staff' %}active{% endif %}">
+        <i class="ti ti-user-cog fs-5"></i> Staff Management
+      </a>
+      <a href="{% url 'admin_analytics' %}"    class="nav-item {% if section == 'analytics' %}active{% endif %}">
+        <i class="ti ti-chart-bar fs-5"></i> Analytics
+      </a>
+      <a href="{% url 'admin_settings' %}"     class="nav-item {% if section == 'settings' %}active{% endif %}">
+        <i class="ti ti-settings fs-5"></i> Settings
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ===== HEADER ===== -->
+  <header class="admin-header">
+    <div class="header-left">
+      <div class="header-brand">
+        <div class="header-logo-box">
+          <span class="fallback-logo">H</span>
+        </div>
+        <div class="header-brand-text">
+          <div class="portal-name">Admin Portal</div>
+          <div class="company-name">Hardik International Pvt Ltd</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="header-right">
+      <div class="btn-bell">
+        <i class="ti ti-bell fs-3"></i>
+        <span class="notification-dot"></span>
+      </div>
+      <div class="header-user">
+        <div>
+          <div class="user-name">{{ request.user.get_full_name|default:request.user.username|default:"Administrator" }}</div>
+          <div class="user-email">{{ request.user.email|default:"admin@hardikinternational.com" }}</div>
+        </div>
+      </div>
+      <a href="{% url 'logout' %}" class="btn-logout ms-2">
+        <i class="ti ti-logout fs-4"></i> Logout
+      </a>
+    </div>
+  </header>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="admin-main">
+    <!-- Page header -->
+    {% block page_header %}
+    <div class="page-header-row" style="margin-bottom: 24px;">
+      <h1 class="page-title" style="font-size: 20px; font-weight: 600; color: #111827; margin-bottom: 4px;">{{ page_title }}</h1>
+      <p class="page-subtitle" style="font-size: 13px; color: #6b7280; margin: 0;">{{ page_subtitle }}</p>
+    </div>
+    {% endblock %}
+
+    <!-- Flash messages -->
+    {% if messages %}
+      {% for message in messages %}
+        <div style="padding:10px 16px;margin-bottom:12px;border-radius:8px;font-size:13px;font-weight:500;
+          background:{% if message.tags == 'error' %}#fee2e2;color:#b91c1c{% else %}#dcfce7;color:#15803d{% endif %};">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+</div>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,116 @@
+{% extends "core/base_distributor.html" %}
+{% block title %}Dashboard — Hardik International{% endblock %}
+
+{% block content %}
+
+<!-- Metric Cards -->
+<div class="metrics-grid mb-5">
+  <div class="metric-card">
+    <div>
+      <div class="metric-label">Outstanding Amount</div>
+      <div class="metric-value" style="font-size:22px;color:#ef4444;">₹{{ metrics.outstanding }}</div>
+      <div class="metric-change" style="color:#ef4444;">Payment due</div>
+    </div>
+    <div class="metric-icon orange"><i class="fa-solid fa-triangle-exclamation"></i></div>
+  </div>
+  <div class="metric-card">
+    <div>
+      <div class="metric-label">Credit Available</div>
+      <div class="metric-value" style="font-size:22px;color:#16a34a;">₹{{ metrics.credit_available }}</div>
+      <div class="metric-change">Available to use</div>
+    </div>
+    <div class="metric-icon green"><i class="fa-solid fa-circle-check"></i></div>
+  </div>
+  <div class="metric-card">
+    <div>
+      <div class="metric-label">Total Orders</div>
+      <div class="metric-value" style="font-size:22px;">{{ metrics.orders_count }}</div>
+      <div class="metric-change">All time</div>
+    </div>
+    <div class="metric-icon blue"><i class="fa-solid fa-cart-shopping"></i></div>
+  </div>
+  <div class="metric-card">
+    <div>
+      <div class="metric-label">Total Paid</div>
+      <div class="metric-value" style="font-size:22px;color:#0052a5;">₹{{ metrics.paid_amount }}</div>
+      <div class="metric-change">Lifetime</div>
+    </div>
+    <div class="metric-icon purple"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+  </div>
+</div>
+
+<!-- Two column -->
+<div class="grid-2 mb-5">
+
+  <!-- Recent Orders -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fa-solid fa-clock-rotate-left" style="color:#0052a5;"></i> Recent Orders</div>
+      <a href="{% url 'order_history' %}" class="btn btn-sm btn-primary">View All</a>
+    </div>
+    <div class="card-body" style="padding:0 20px;">
+      {% for order in recent_orders %}
+        <div class="order-list-item">
+          <div>
+            <div class="order-id">{{ order.order_id }}</div>
+            <div class="order-company">{{ order.order_date }}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="order-amount">₹{{ order.total_amount }}</div>
+          </div>
+          <div style="margin-left:12px;">
+            {% if order.status == 'delivered' %}<span class="badge badge-success">Delivered</span>
+            {% elif order.status == 'pending' %}<span class="badge badge-warning">Pending</span>
+            {% elif order.status == 'processing' %}<span class="badge badge-info">Processing</span>
+            {% elif order.status == 'shipped' %}<span class="badge badge-purple">Shipped</span>
+            {% elif order.status == 'cancelled' %}<span class="badge badge-danger">Cancelled</span>
+            {% else %}<span class="badge badge-gray">{{ order.get_status_display }}</span>{% endif %}
+          </div>
+        </div>
+      {% empty %}
+        <div style="padding:30px 0;text-align:center;color:#9ca3af;font-size:13px;">
+          No orders yet. <a href="{% url 'place_order' %}" style="color:#0052a5;">Place your first order →</a>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Announcements -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fa-solid fa-bullhorn" style="color:#0052a5;"></i> Announcements</div>
+      <a href="{% url 'announcements' %}" class="btn btn-sm btn-primary">View All</a>
+    </div>
+    <div style="padding:0 20px;">
+      {% for ann in announcements %}
+        <div class="order-list-item">
+          <div>
+            <div class="order-id">{{ ann.title }}</div>
+            <div class="order-company">{{ ann.published_at }}</div>
+          </div>
+          <span class="badge badge-{% if ann.category == 'urgent' %}danger{% elif ann.category == 'important' %}warning{% else %}info{% endif %}">
+            {{ ann.get_category_display }}
+          </span>
+        </div>
+      {% empty %}
+        <div style="padding:30px 0;text-align:center;color:#9ca3af;font-size:13px;">No announcements.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+<!-- Quick actions -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title"><i class="fa-solid fa-bolt" style="color:#f97316;"></i> Quick Actions</div>
+  </div>
+  <div class="card-body" style="display:flex;gap:12px;flex-wrap:wrap;">
+    <a href="{% url 'place_order' %}"     class="btn btn-primary"><i class="fa-solid fa-cart-plus"></i> Place New Order</a>
+    <a href="{% url 'product_catalogue' %}" class="btn" style="background:#f3f4f6;color:#374151;"><i class="fa-solid fa-book-open"></i> Browse Catalogue</a>
+    <a href="{% url 'bills_invoices' %}"  class="btn" style="background:#f3f4f6;color:#374151;"><i class="fa-solid fa-file-invoice"></i> My Invoices</a>
+    <a href="{% url 'ledger_payments' %}" class="btn" style="background:#f3f4f6;color:#374151;"><i class="fa-solid fa-credit-card"></i> Ledger</a>
+  </div>
+</div>
+
+{% endblock %}

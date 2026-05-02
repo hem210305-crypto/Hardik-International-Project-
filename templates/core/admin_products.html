@@ -1,0 +1,500 @@
+{% extends "core/base_admin.html" %}
+{% block title %}Products Management — Hardik International{% endblock %}
+{% block page_header %}{% endblock %}
+
+{% block content %}
+<style>
+  /* Base customisations */
+  .btn-pill { border-radius: 50rem !important; }
+  .fs-7 { font-size: 0.85rem; }
+  
+  /* Status Badges */
+  .badge-status { 
+      font-weight: 600; 
+      font-size: 0.75rem; 
+      padding: 0.35rem 0.65rem; 
+      border: none;
+      display: inline-flex; 
+      align-items: center; 
+      letter-spacing: 0.02em;
+      color: #fff !important;
+  }
+  .badge-instock { background-color: #28a745 !important; }
+  .badge-lowstock { background-color: #ffc107 !important; color: #000 !important; }
+  .badge-outstock { background-color: #dc3545 !important; }
+  
+  /* Card Layout */
+  .card-product { transition: box-shadow 0.2s ease-in-out; margin-bottom: 1rem; border-left: 4px solid transparent; }
+  .card-product:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+  .card-product.out-of-stock { border-left-color: #dc3545; }
+  .card-product.low-stock { border-left-color: #ffc107; }
+  .card-product.in-stock { border-left-color: #28a745; }
+  
+  /* Title layout */
+  .page-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+
+  /* Wizard styling */
+  .step-item { display: flex; flex-direction: column; align-items: center; z-index: 1; flex: 1; position: relative; }
+  .step-item::after { content: ''; position: absolute; top: 16px; left: 50%; width: 100%; height: 2px; background-color: #f1f3f5; z-index: -1; }
+  .step-item:last-child::after { display: none; }
+  .step-circle { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: white; border: 2px solid #dee2e6; color: #adb5bd; font-size: 14px; font-weight: 600; margin-bottom: 8px; transition: all 0.3s; }
+  .step-text { font-size: 0.75rem; color: #adb5bd; font-weight: 500; }
+  
+  .step-item.active .step-circle { border-color: #f03e3e; color: #f03e3e; }
+  .step-item.active .step-text { color: #f03e3e; }
+  
+  .step-item.completed .step-circle { background-color: #28a745; border-color: #28a745; color: white; }
+  .step-item.completed .step-text { color: #28a745; }
+  .step-item.completed::after { background-color: #28a745; }
+  
+  .step-pane { display: none; min-height: 380px; }
+  .step-pane.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+  
+  .form-label-custom { font-size: 0.8rem; color: #6c757d; margin-bottom: 0.25rem; font-weight: 500; }
+  .required-ast { color: #f03e3e; }
+</style>
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+{% endblock %}
+
+<div class="container-xl py-4" style="background: transparent;">
+  
+  <!-- Header Row -->
+  <div class="page-header-row mb-4">
+    <div>
+      <h2 class="mb-1 text-dark fw-bold fs-2" style="font-family: inherit;">Products Management</h2>
+      <div class="text-muted" style="font-size: 0.9rem;">Manage product inventory and pricing</div>
+    </div>
+    <div>
+      <button type="button" class="btn btn-danger text-white fw-bold px-3 shadow-sm rounded-2" data-bs-toggle="modal" data-bs-target="#addModal" style="background-color: #f03e3e; border-color: #f03e3e;">
+        + Add New Product
+      </button>
+    </div>
+  </div>
+
+  <!-- Search and Filter Bar -->
+  <div class="card mb-4 border border-light-subtle shadow-sm rounded-3">
+    <form method="get" class="card-body p-3 d-flex align-items-center justify-content-between m-0">
+      <div class="input-icon" style="width: 45%;">
+        <span class="input-icon-addon">
+          <i class="ti ti-search text-muted"></i>
+        </span>
+        <input type="text" name="q" value="{{ request.GET.q }}" class="form-control bg-light border-0" placeholder="Search by name, SKU, or category..." style="font-size: 0.9rem;">
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+        <select name="status" class="form-select bg-white text-dark rounded-pill px-3 fs-7 border-light-subtle" style="width: 140px; cursor: pointer;">
+            <option value="">All Status</option>
+            <option value="in" {% if request.GET.status == 'in' %}selected{% endif %}>In Stock</option>
+            <option value="low" {% if request.GET.status == 'low' %}selected{% endif %}>Low Stock</option>
+            <option value="out" {% if request.GET.status == 'out' %}selected{% endif %}>Out of Stock</option>
+        </select>
+        <button type="submit" class="btn btn-outline-secondary bg-white text-dark rounded-pill px-4 fs-7 border-light-subtle">
+            Filter
+        </button>
+        {% if request.GET.q or request.GET.status %}
+        <a href="{% url 'admin_products' %}" class="btn btn-link text-muted fs-7 text-decoration-none">Clear</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Products List Header Row -->
+  <div class="d-flex px-4 py-2 text-muted fw-bold fs-7 mb-2 border-bottom border-2">
+      <div style="flex: 2;">PRODUCT DETAILS</div>
+      <div style="flex: 1;">MANUFACTURER</div>
+      <div style="flex: 1;">PRICE (MRP)</div>
+      <div style="flex: 1;">STOCK</div>
+      <div style="width: 150px; text-align: right;">ACTIONS</div>
+  </div>
+
+  <!-- Products List -->
+  <div class="d-flex flex-column mb-4">
+    {% for p in products %}
+    <div class="card card-product border border-light-subtle shadow-sm rounded-3 
+        {% if p.stock_quantity == 0 %}out-of-stock{% elif p.stock_quantity <= p.min_stock_level %}low-stock{% else %}in-stock{% endif %}">
+      <div class="card-body p-3 d-flex align-items-center">
+        
+        <!-- Details -->
+        <div class="d-flex align-items-center pe-3" style="flex: 2;">
+            <div class="bg-azure-lt text-azure rounded d-flex align-items-center justify-content-center me-3" style="width: 42px; height: 42px; flex-shrink: 0;">
+                <i class="ti ti-box fs-3"></i>
+            </div>
+            <div>
+                <h3 class="mb-0 text-dark fw-bold" style="font-size: 0.95rem;">{{ p.name }}</h3>
+                <div class="text-muted mt-1" style="font-size: 0.75rem;">
+                    <span class="fw-medium text-azure">{{ p.sku }}</span> • {{ p.category.name|default:"General" }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Manufacturer -->
+        <div class="px-3 text-muted" style="flex: 1; font-size: 0.85rem;">
+            {{ p.manufacturer }}
+        </div>
+        
+        <!-- Price -->
+        <div class="px-3" style="flex: 1;">
+            <strong class="text-dark fs-5">₹{{ p.mrp }}</strong>
+            <div class="text-muted" style="font-size: 0.7rem;">per unit</div>
+        </div>
+        
+        <!-- Stock -->
+        <div class="px-3" style="flex: 1;">
+            {% if p.stock_quantity == 0 %}
+              <span class="badge badge-status badge-outstock rounded-pill mb-1">Out of Stock</span>
+            {% elif p.stock_quantity <= p.min_stock_level %}
+              <span class="badge badge-status badge-lowstock rounded-pill mb-1">Low Stock</span>
+            {% else %}
+              <span class="badge badge-status badge-instock rounded-pill mb-1">In Stock</span>
+            {% endif %}
+            <div class="text-muted fw-bold" style="font-size: 0.8rem;">Stock: {{ p.stock_quantity }}</div>
+        </div>
+
+        <!-- Actions -->
+        <div class="ps-3 d-flex flex-column align-items-end justify-content-center border-start border-light-subtle" style="width: 150px;">
+           <div class="d-flex gap-2">
+             <button class="btn btn-sm btn-outline-secondary border-light-subtle d-flex align-items-center">
+                 <i class="ti ti-edit me-1"></i> Edit
+             </button>
+             <form method="post" class="m-0 p-0" onsubmit="return confirm('Delete this product?');">
+                 {% csrf_token %}
+                 <input type="hidden" name="action" value="delete">
+                 <input type="hidden" name="product_id" value="{{ p.id }}">
+                 <button type="submit" class="btn btn-sm btn-outline-danger border-light-subtle text-danger d-flex align-items-center">
+                     <i class="ti ti-trash"></i>
+                 </button>
+             </form>
+           </div>
+        </div>
+
+      </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-5 text-muted">
+        <i class="ti ti-box fs-1 mb-2"></i>
+        <h5>No Products Found</h5>
+        <p>You haven't added any products yet, or no products match your filter.</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Summary Bottom Cards -->
+  <div class="row g-3">
+    <div class="col-md-3">
+      <div class="card border border-light-subtle shadow-sm rounded-3">
+        <div class="card-body p-3">
+          <div class="text-muted fs-7 mb-1">Total Products</div>
+          <h3 class="text-dark fw-bold mb-0 fs-2 text-primary">{{ totals.total }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border border-light-subtle shadow-sm rounded-3">
+        <div class="card-body p-3">
+          <div class="text-muted fs-7 mb-1">In Stock</div>
+          <h3 class="text-success fw-bold mb-0 fs-2">{{ totals.in_stock }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border border-light-subtle shadow-sm rounded-3">
+        <div class="card-body p-3">
+          <div class="text-muted fs-7 mb-1">Low Stock</div>
+          <h3 class="text-warning fw-bold mb-0 fs-2" style="color: #ffc107 !important;">{{ totals.low_stock }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border border-light-subtle shadow-sm rounded-3">
+        <div class="card-body p-3">
+          <div class="text-muted fs-7 mb-1">Out of Stock</div>
+          <h3 class="text-danger fw-bold mb-0 fs-2">{{ totals.out }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Add Modal Wizard -->
+<div class="modal modal-blur fade" id="addModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <form method="post" id="addProductForm">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <div class="modal-header border-0 pb-0 pt-4 px-4 d-flex align-items-start">
+          <div class="d-flex align-items-center">
+             <div class="bg-danger-lt text-danger rounded d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+                 <i class="ti ti-box fs-2"></i>
+             </div>
+             <div>
+               <h5 class="modal-title fs-3 fw-bold mb-1">Add New Product</h5>
+               <div class="text-muted fs-7">Create a new product entry with complete information</div>
+             </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        
+        <div class="modal-body pt-4 px-4 pb-0">
+           <!-- Progress bar and steps -->
+           <div class="d-flex justify-content-between text-muted fs-7 mb-2">
+             <span id="pStepCounter" class="fw-medium">Step 1 of 4</span>
+             <span id="pStepPercentage" class="text-danger fw-bold">25% Complete</span>
+           </div>
+           <div class="progress progress-sm mb-4 bg-light">
+             <div class="progress-bar" id="pProgressBar" style="width: 25%; background-color: #f03e3e;"></div>
+           </div>
+           
+           <div class="d-flex justify-content-between mb-4 position-relative step-indicators">
+             <div class="step-item active" id="psi-1">
+                <div class="step-circle"><i class="ti ti-check"></i></div>
+                <div class="step-text">Basic Info</div>
+             </div>
+             <div class="step-item" id="psi-2">
+                <div class="step-circle"><i class="ti ti-currency-rupee"></i></div>
+                <div class="step-text">Pricing & Stock</div>
+             </div>
+             <div class="step-item" id="psi-3">
+                <div class="step-circle"><i class="ti ti-calendar"></i></div>
+                <div class="step-text">Dates</div>
+             </div>
+             <div class="step-item" id="psi-4">
+                <div class="step-circle"><i class="ti ti-file-description"></i></div>
+                <div class="step-text">Additional Info</div>
+             </div>
+           </div>
+           
+           <hr class="my-4">
+
+           <!-- Step 1: Basic Info -->
+           <div class="step-pane active" id="pstep1">
+              <div class="alert alert-info bg-azure-lt border-0 text-azure mb-4 d-flex align-items-start p-3">
+                 <i class="ti ti-info-circle fs-3 me-3 mt-1"></i>
+                 <div>
+                    <strong class="d-block mb-1">Basic Product Information</strong>
+                    <span class="fs-7 opacity-75">Enter the product's primary details and identification numbers.</span>
+                 </div>
+              </div>
+              <div class="row g-3 mb-4">
+                 <div class="col-md-12">
+                    <label class="form-label-custom">Product Name <span class="required-ast">*</span></label>
+                    <input type="text" name="name" class="form-control bg-light border-0" required placeholder="e.g. T127.36 3.5mm Cortex Screws">
+                 </div>
+                 <div class="col-md-6">
+                    <label class="form-label-custom">Category <span class="required-ast">*</span></label>
+                    <input type="text" name="category" class="form-control bg-light border-0" required>
+                 </div>
+                 <div class="col-md-6">
+                    <label class="form-label-custom">Manufacturer <span class="required-ast">*</span></label>
+                    <input type="text" name="manufacturer" class="form-control bg-light border-0" value="Hardik International Pvt Ltd" required>
+                 </div>
+                 <div class="col-md-6">
+                    <label class="form-label-custom">Batch Number</label>
+                    <input type="text" name="batch_number" class="form-control bg-light border-0" placeholder="BATCH-01">
+                 </div>
+                 <div class="col-md-6">
+                    <label class="form-label-custom">HSN Code</label>
+                    <input type="text" name="hsn_code" class="form-control bg-light border-0" placeholder="e.g. 90211000">
+                 </div>
+              </div>
+           </div>
+
+           <!-- Step 2: Pricing & Stock -->
+           <div class="step-pane" id="pstep2">
+              <div class="alert alert-info bg-azure-lt border-0 text-azure mb-4 d-flex align-items-start p-3">
+                 <i class="ti ti-info-circle fs-3 me-3 mt-1"></i>
+                 <div>
+                    <strong class="d-block mb-1">Pricing & Inventory</strong>
+                    <span class="fs-7 opacity-75">Set pricing information and manage stock levels.</span>
+                 </div>
+              </div>
+              <div class="row g-3 mb-4">
+                 <div class="col-md-6">
+                    <label class="form-label-custom">MRP (₹) <span class="required-ast">*</span></label>
+                    <input type="number" step="0.01" id="p_mrp" name="mrp" class="form-control bg-light border-0" required>
+                 </div>
+                 <div class="col-md-6">
+                    <label class="form-label-custom">Selling Price (₹) <span class="required-ast">*</span></label>
+                    <input type="number" step="0.01" id="p_sell" name="selling_price" class="form-control bg-light border-0" required>
+                 </div>
+                 <div class="col-md-6">
+                    <label class="form-label-custom">Stock Quantity <span class="required-ast">*</span></label>
+                    <input type="number" id="p_qty" name="stock_quantity" class="form-control bg-light border-0" value="100" required>
+                 </div>
+                 <div class="col-md-6">
+                    <label class="form-label-custom">Min Stock Level <span class="required-ast">*</span></label>
+                    <input type="number" id="p_min" name="min_stock_level" class="form-control bg-light border-0" value="20" required>
+                 </div>
+              </div>
+           </div>
+
+           <!-- Step 3: Dates -->
+           <div class="step-pane" id="pstep3">
+              <div class="alert alert-info bg-azure-lt border-0 text-azure mb-4 d-flex align-items-start p-3">
+                 <i class="ti ti-info-circle fs-3 me-3 mt-1"></i>
+                 <div>
+                    <strong class="d-block mb-1">Important Dates</strong>
+                    <span class="fs-7 opacity-75">Specify manufacturing and expiry dates for inventory tracking.</span>
+                 </div>
+              </div>
+              <div class="row g-3 mb-4">
+                 <div class="col-md-6">
+                    <label class="form-label-custom">Manufacturing Date</label>
+                    <input type="date" name="manufacture_date" class="form-control bg-light border-0">
+                 </div>
+                 <div class="col-md-6">
+                    <label class="form-label-custom">Expiry Date</label>
+                    <input type="date" name="expiry_date" class="form-control bg-light border-0">
+                 </div>
+                 <div class="col-12 mt-4">
+                    <div class="alert bg-warning-lt border border-warning text-warning d-flex align-items-center p-3 fs-7">
+                        <i class="ti ti-alert-circle me-2 fs-5"></i>
+                        Note: Date information helps with inventory management and automatic expiry alerts. You can skip this step if dates are not available right now.
+                    </div>
+                 </div>
+              </div>
+           </div>
+
+           <!-- Step 4: Additional Info & Review -->
+           <div class="step-pane" id="pstep4">
+              <div class="alert alert-info bg-azure-lt border-0 text-azure mb-4 d-flex align-items-start p-3">
+                 <i class="ti ti-info-circle fs-3 me-3 mt-1"></i>
+                 <div>
+                    <strong class="d-block mb-1">Additional Information & Image</strong>
+                    <span class="fs-7 opacity-75">Add extra notes and review your product.</span>
+                 </div>
+              </div>
+              <div class="row g-3 mb-4">
+                 <div class="col-12">
+                    <label class="form-label-custom">Additional Information</label>
+                    <textarea name="description" class="form-control bg-light border-0" rows="2" placeholder="Enter any additional product information, storage instructions, or special notes..."></textarea>
+                 </div>
+                 <div class="col-12 mt-3">
+                    <div class="card border border-warning-subtle bg-orange-lt">
+                       <div class="card-body p-3">
+                          <h5 class="text-warning fw-bold mb-3"><i class="ti ti-check me-2"></i>Review Product Details</h5>
+                          <div class="row g-2 fs-7 text-dark">
+                             <div class="col-6"><span class="text-muted d-block" style="font-size:0.7rem;">Product Name</span><span id="revPName" class="fw-bold"></span></div>
+                             <div class="col-6"><span class="text-muted d-block" style="font-size:0.7rem;">Category</span><span id="revPCat" class="fw-bold"></span></div>
+                             <div class="col-6 mt-2"><span class="text-muted d-block" style="font-size:0.7rem;">Manufacturer</span><span id="revPMan" class="fw-bold"></span></div>
+                             <div class="col-6 mt-2"><span class="text-muted d-block" style="font-size:0.7rem;">Batch Number</span><span id="revPBat" class="fw-bold"></span></div>
+                             <div class="col-6 mt-2"><span class="text-muted d-block" style="font-size:0.7rem;">MRP</span><span id="revPMrp" class="fw-bold text-success"></span></div>
+                             <div class="col-6 mt-2"><span class="text-muted d-block" style="font-size:0.7rem;">Selling Price</span><span id="revPSell" class="fw-bold text-dark"></span></div>
+                          </div>
+                          <div class="alert border-warning text-warning p-2 mt-3 mb-0 fs-7 d-flex">
+                             <i class="ti ti-alert-triangle me-2 mt-1"></i>
+                             Important: Please verify all product details before submitting. Ensure pricing and stock information is accurate.
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+           </div>
+
+        </div>
+        
+        <div class="modal-footer border-0 pt-0 pb-4 px-4 mt-2 d-flex justify-content-between">
+          <button type="button" class="btn btn-outline-secondary px-4 rounded-pill" id="pPrevBtn" style="display: none;">Previous</button>
+          <div class="ms-auto">
+             <button type="button" class="btn btn-link text-muted text-decoration-none" data-bs-dismiss="modal">Cancel</button>
+             <button type="button" class="btn btn-danger text-white fw-bold px-4 rounded-pill shadow-sm" id="pNextBtn" style="background-color: #f03e3e; border-color: #f03e3e;">Next Step</button>
+             <button type="submit" class="btn btn-success text-white fw-bold px-4 rounded-pill shadow-sm" id="pSubmitBtn" style="display: none;">
+                <i class="ti ti-check me-1"></i> Add Product
+             </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentPStep = 1;
+    const totalPSteps = 4;
+    
+    const pNextBtn = document.getElementById('pNextBtn');
+    const pPrevBtn = document.getElementById('pPrevBtn');
+    const pSubmitBtn = document.getElementById('pSubmitBtn');
+    const pForm = document.getElementById('addProductForm');
+    
+    function updatePStepUI() {
+        for(let i=1; i<=totalPSteps; i++) {
+            const pane = document.getElementById(`pstep${i}`);
+            const indicator = document.getElementById(`psi-${i}`);
+            
+            if(i === currentPStep) {
+                pane.classList.add('active');
+                indicator.classList.add('active');
+                indicator.classList.remove('completed');
+            } else if (i < currentPStep) {
+                pane.classList.remove('active');
+                indicator.classList.remove('active');
+                indicator.classList.add('completed');
+            } else {
+                pane.classList.remove('active');
+                indicator.classList.remove('active');
+                indicator.classList.remove('completed');
+            }
+        }
+        
+        document.getElementById('pStepCounter').innerText = `Step ${currentPStep} of ${totalPSteps}`;
+        const pct = Math.round((currentPStep / totalPSteps) * 100);
+        document.getElementById('pStepPercentage').innerText = `${pct}% Complete`;
+        document.getElementById('pProgressBar').style.width = `${pct}%`;
+        
+        if (currentPStep === 1) {
+            pPrevBtn.style.display = 'none';
+        } else {
+            pPrevBtn.style.display = 'block';
+        }
+        
+        if (currentPStep === totalPSteps) {
+            pNextBtn.style.display = 'none';
+            pSubmitBtn.style.display = 'inline-flex';
+            
+            // Populate review
+            document.getElementById('revPName').innerText = pForm.querySelector('input[name="name"]').value || '—';
+            document.getElementById('revPCat').innerText = pForm.querySelector('input[name="category"]').value || '—';
+            document.getElementById('revPMan').innerText = pForm.querySelector('input[name="manufacturer"]').value || '—';
+            document.getElementById('revPBat').innerText = pForm.querySelector('input[name="batch_number"]').value || '—';
+            document.getElementById('revPMrp').innerText = '₹' + (pForm.querySelector('input[name="mrp"]').value || '0.00');
+            document.getElementById('revPSell').innerText = '₹' + (pForm.querySelector('input[name="selling_price"]').value || '0.00');
+        } else {
+            pNextBtn.style.display = 'inline-flex';
+            pSubmitBtn.style.display = 'none';
+        }
+    }
+    
+    pNextBtn.addEventListener('click', function() {
+        const currentPane = document.getElementById(`pstep${currentPStep}`);
+        const inputs = currentPane.querySelectorAll('input[required]');
+        let valid = true;
+        inputs.forEach(inp => {
+            if(!inp.checkValidity()) {
+                inp.reportValidity();
+                valid = false;
+            }
+        });
+        if(!valid) return;
+        
+        if (currentPStep < totalPSteps) {
+            currentPStep++;
+            updatePStepUI();
+        }
+    });
+    
+    pPrevBtn.addEventListener('click', function() {
+        if (currentPStep > 1) {
+            currentPStep--;
+            updatePStepUI();
+        }
+    });
+});
+</script>
+{% endblock %}

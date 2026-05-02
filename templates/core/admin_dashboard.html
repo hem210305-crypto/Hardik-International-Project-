@@ -1,0 +1,155 @@
+{% extends "core/base_admin.html" %}
+{% block title %}Admin Dashboard — Hardik International{% endblock %}
+
+{% block content %}
+
+<!-- ── Metric Cards ── -->
+<div class="metrics-grid mb-5">
+
+  <div class="metric-card">
+    <div>
+      <div class="metric-label">Total Distributors</div>
+      <div class="metric-value">{{ metrics.distributors }}</div>
+      <div class="metric-change">+12 this month</div>
+    </div>
+    <div class="metric-icon blue">
+      <i class="fa-solid fa-building-user"></i>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div>
+      <div class="metric-label">Total Products</div>
+      <div class="metric-value">{{ metrics.products }}</div>
+      <div class="metric-change">+45 new items</div>
+    </div>
+    <div class="metric-icon green">
+      <i class="fa-solid fa-box-open"></i>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div>
+      <div class="metric-label">Orders (Today)</div>
+      <div class="metric-value">{{ metrics.orders }}</div>
+      <div class="metric-change" style="color:#f97316;">{{ metrics.pending }} pending</div>
+    </div>
+    <div class="metric-icon purple">
+      <i class="fa-solid fa-cart-shopping"></i>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div>
+      <div class="metric-label">Revenue (Month)</div>
+      <div class="metric-value">₹{{ metrics.revenue }}</div>
+      <div class="metric-change">+18% vs last month</div>
+    </div>
+    <div class="metric-icon orange">
+      <i class="fa-solid fa-arrow-trend-up"></i>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Two column row ── -->
+<div class="grid-2 mb-5">
+
+  <!-- Recent Orders -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fa-solid fa-clock-rotate-left" style="color:#f97316;"></i>
+        Recent Orders
+      </div>
+      <a href="{% url 'admin_orders' %}" class="btn btn-sm btn-primary">View All</a>
+    </div>
+    <div class="card-body" style="padding:0 20px;">
+      {% for order in recent_orders %}
+        <div class="order-list-item">
+          <div>
+            <div class="order-id">{{ order.order_id }}</div>
+            <div class="order-company">{{ order.distributor.business_name }}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="order-amount">₹{{ order.total_amount }}</div>
+            <div class="order-time">{{ order.order_date }}</div>
+          </div>
+          <div style="margin-left:12px;">
+            {% if order.status == 'delivered' %}<span class="badge badge-success">Completed</span>
+            {% elif order.status == 'pending' %}<span class="badge badge-warning">Pending</span>
+            {% elif order.status == 'processing' %}<span class="badge badge-info">Processing</span>
+            {% elif order.status == 'shipped' %}<span class="badge badge-purple">Shipped</span>
+            {% elif order.status == 'cancelled' %}<span class="badge badge-danger">Cancelled</span>
+            {% else %}<span class="badge badge-gray">{{ order.get_status_display }}</span>{% endif %}
+          </div>
+        </div>
+      {% empty %}
+        <div style="padding:30px 0;text-align:center;color:#9ca3af;font-size:13px;">No orders yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Low Stock Alerts -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fa-solid fa-triangle-exclamation" style="color:#f97316;"></i>
+        Low Stock Alerts
+      </div>
+      <a href="{% url 'admin_products' %}" class="btn btn-sm btn-primary">Manage</a>
+    </div>
+    <div class="card-body" style="padding:0 20px;">
+      {% for p in low_stock_products %}
+        <div class="stock-alert-item">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <div class="stock-product-name">{{ p.name|truncatechars:40 }}</div>
+            <span class="badge badge-orange" style="font-size:10px;">{{ p.category.name|default:"General" }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;" class="stock-meta">
+            <span>Current: <strong style="color:#ef4444;">{{ p.stock_quantity }}</strong></span>
+            <span>Min Required: {{ p.min_stock_level }}</span>
+          </div>
+          <div class="stock-bar-track">
+            {% widthratio p.stock_quantity p.min_stock_level 100 as pct %}
+            <div class="stock-bar-fill" style="width:{% if pct > 100 %}100{% else %}{{ pct }}{% endif %}%;"></div>
+          </div>
+        </div>
+      {% empty %}
+        <div style="padding:30px 0;text-align:center;color:#9ca3af;font-size:13px;">
+          <i class="fa-solid fa-circle-check" style="color:#16a34a;"></i> All products are well stocked.
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Pending Approvals ── -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <i class="fa-solid fa-clock" style="color:#f97316;"></i>
+      Pending Approvals
+    </div>
+  </div>
+  {% for d in pending_distributors %}
+    <div class="approval-item">
+      <div>
+        <div class="approval-company">{{ d.business_name }}</div>
+        <div class="approval-type">New Registration</div>
+      </div>
+      <div class="approval-date">{{ d.created_at|date:"Y-m-d" }}</div>
+      <div class="approval-actions">
+        <button class="btn-icon btn-icon-gray" title="View"><i class="fa-regular fa-eye"></i></button>
+        <button class="btn-icon btn-icon-gray" title="Download"><i class="fa-solid fa-download"></i></button>
+        <button class="btn-icon btn-icon-green" title="Approve"><i class="fa-solid fa-check"></i></button>
+        <button class="btn-icon btn-icon-red" title="Reject"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>
+  {% empty %}
+    <div style="padding:24px;text-align:center;color:#9ca3af;font-size:13px;">No pending approvals.</div>
+  {% endfor %}
+</div>
+
+{% endblock %}

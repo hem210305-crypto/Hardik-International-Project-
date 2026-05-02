@@ -1,0 +1,27 @@
+{% extends "core/base_admin.html" %}
+{% block title %}Invoices — Hardik International{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header"><h3 class="card-title">All Invoices</h3></div>
+  <div class="table-responsive">
+    <table class="table table-vcenter card-table">
+      <thead><tr><th>Invoice No.</th><th>Distributor</th><th>Order</th><th>Invoice Date</th><th>Due Date</th><th>Amount</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for inv in invoices %}
+          <tr>
+            <td>{{ inv.invoice_number }}</td>
+            <td>{{ inv.distributor.business_name }}</td>
+            <td>{{ inv.order.order_id|default:"—" }}</td>
+            <td>{{ inv.invoice_date }}</td>
+            <td>{{ inv.due_date }}</td>
+            <td>₹{{ inv.amount }}</td>
+            <td><span class="badge bg-{% if inv.status == 'paid' %}success{% elif inv.status == 'overdue' %}danger{% elif inv.status == 'partial' %}warning{% else %}secondary{% endif %}">{{ inv.get_status_display }}</span></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="text-center text-muted">No invoices yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

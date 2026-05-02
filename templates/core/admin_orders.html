@@ -1,0 +1,436 @@
+{% extends "core/base_admin.html" %}
+{% block title %}Orders Management — Hardik International{% endblock %}
+{% block page_header %}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  /* ---- Orders Page ---- */
+  .orders-wrapper {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .page-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+  }
+  .page-header-row h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 2px;
+  }
+  .page-header-row p {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0;
+  }
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+
+  .btn-header-outline {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .btn-header-outline:hover { background: #f9fafb; }
+
+  /* Search + filter bar */
+  .orders-filter-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: unset;
+    width: 340px;
+    max-width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 50px;
+    padding: 8px 16px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+    margin-right: 20px;
+  }
+  .search-box i { color: #9ca3af; font-size: 1rem; flex-shrink: 0; }
+  .search-box input {
+    border: none;
+    outline: none;
+    font-size: 0.875rem;
+    color: #374151;
+    width: 100%;
+    background: transparent;
+    font-family: 'Inter', sans-serif;
+  }
+  .search-box input::placeholder { color: #9ca3af; }
+
+  .filter-tabs { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  .filter-tab {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.83rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+    background: transparent;
+    transition: all 0.15s;
+    color: #374151;
+  }
+  .filter-tab.active  { background: #f97316; color: #fff; border-radius: 6px; }
+  .filter-tab.default { background: transparent; color: #374151; }
+  .filter-tab.default:hover { color: #111827; background: #f9fafb; border-radius: 6px; }
+
+  /* Table card */
+  .orders-table-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  .orders-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  .orders-table thead tr {
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .orders-table thead th {
+    padding: 12px 16px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .orders-table tbody tr {
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.12s;
+  }
+  .orders-table tbody tr:last-child { border-bottom: none; }
+  .orders-table tbody tr:hover { background: #fafafa; }
+  .orders-table td {
+    padding: 14px 16px;
+    vertical-align: middle;
+    color: #111827;
+  }
+
+  .order-id-cell { font-weight: 600; color: #374151; font-size: 0.82rem; line-height: 1.5; }
+  .dist-name { font-weight: 600; color: #111827; }
+  .dist-code { font-size: 0.78rem; color: #9ca3af; margin-top: 1px; }
+  .items-badge {
+    display: inline-flex; flex-direction: column; align-items: center;
+    background: #f3f4f6; border-radius: 6px;
+    padding: 4px 10px; font-size: 0.8rem; font-weight: 600; color: #374151;
+  }
+  .items-badge span { font-size: 0.7rem; color: #9ca3af; font-weight: 400; }
+  .amount-cell { font-weight: 700; color: #111827; }
+
+  /* Status badges */
+  .status-pill {
+    display: inline-flex; align-items: center;
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 0.78rem; font-weight: 600;
+  }
+  .status-pending    { background: #fef9c3; color: #a16207; }
+  .status-processing { background: #dbeafe; color: #1d4ed8; }
+  .status-shipped    { background: #ede9fe; color: #7c3aed; }
+  .status-delivered  { background: #dcfce7; color: #15803d; }
+  .status-cancelled  { background: #fee2e2; color: #dc2626; }
+
+  /* Payment badges */
+  .payment-paid    { color: #15803d; font-weight: 600; }
+  .payment-unpaid  { color: #dc2626; font-weight: 600; }
+  .payment-partial { color: #d97706; font-weight: 600; }
+
+  /* Action buttons */
+  .action-view {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 5px 14px;
+    background: #fff; border: 1px solid #d1d5db;
+    border-radius: 6px; font-size: 0.8rem; font-weight: 500;
+    color: #374151; cursor: pointer; text-decoration: none;
+    transition: background 0.12s;
+    margin-right: 6px;
+  }
+  .action-view:hover { background: #f9fafb; }
+  .btn-update {
+    padding: 5px 14px;
+    background: #fff; border: 1px solid #d1d5db;
+    border-radius: 6px; font-size: 0.8rem; font-weight: 500;
+    color: #374151; cursor: pointer;
+    transition: background 0.12s;
+  }
+  .btn-update:hover { background: #f9fafb; }
+
+  /* Summary cards */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-top: 1rem;
+  }
+  .summary-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px 20px;
+  }
+  .summary-label { font-size: 0.82rem; color: #6b7280; font-weight: 500; margin-bottom: 6px; }
+  .summary-value { font-size: 1.75rem; font-weight: 700; color: #111827; }
+  .summary-value.orange  { color: #ea580c; }
+  .summary-value.blue    { color: #1d4ed8; }
+  .summary-value.purple  { color: #7c3aed; }
+  .summary-value.green   { color: #15803d; }
+
+  /* Update status modal */
+  .modal-backdrop-custom {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 1050;
+    align-items: center; justify-content: center;
+  }
+  .modal-backdrop-custom.open { display: flex; }
+  .modal-box {
+    background: #fff; border-radius: 14px; padding: 28px 32px;
+    width: 420px; max-width: 95vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+  }
+  .modal-box h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
+  .modal-box p  { font-size: 0.85rem; color: #6b7280; margin-bottom: 20px; }
+  .modal-select {
+    width: 100%; padding: 10px 14px;
+    border: 1px solid #d1d5db; border-radius: 8px;
+    font-size: 0.875rem; font-family: 'Inter', sans-serif;
+    margin-bottom: 20px; outline: none;
+  }
+  .modal-select:focus { border-color: #f97316; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .btn-cancel-modal {
+    padding: 9px 20px; border: 1px solid #d1d5db;
+    background: #fff; border-radius: 8px; font-size: 0.875rem;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+  .btn-save-modal {
+    padding: 9px 20px;
+    background: #f97316; color: #fff; border: none;
+    border-radius: 8px; font-size: 0.875rem; font-weight: 600;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+    transition: opacity 0.15s;
+  }
+  .btn-save-modal:hover { opacity: 0.9; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="orders-wrapper">
+
+  <!-- Header -->
+  <div class="page-header-row">
+    <div>
+      <h2>Orders Management</h2>
+      <p>Monitor and manage all distributor orders</p>
+    </div>
+    <div class="header-actions">
+      <a href="#" class="btn-header-outline">
+        <i class="ti ti-adjustments-horizontal"></i> Advanced Filters
+      </a>
+      <a href="#" class="btn-header-outline">
+        <i class="ti ti-download"></i> Export
+      </a>
+    </div>
+  </div>
+
+  <!-- Search & Filter Tabs -->
+  <div class="orders-filter-card">
+    <div class="search-box">
+      <i class="ti ti-search"></i>
+      <input type="text" id="orderSearch" placeholder="Search by Order ID, Distributor name or ID..." oninput="filterOrders()">
+    </div>
+    <div class="filter-tabs">
+      <button class="filter-tab {% if not status_filter %}active{% else %}default{% endif %}" onclick="setStatusFilter('')">All</button>
+      {% for val, label in status_choices %}
+      <button class="filter-tab {% if status_filter == val %}active{% else %}default{% endif %}" onclick="setStatusFilter('{{ val }}')">{{ label }}</button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="orders-table-card">
+    <table class="orders-table" id="ordersTable">
+      <thead>
+        <tr>
+          <th>ORDER ID</th>
+          <th>DISTRIBUTOR</th>
+          <th>DATE</th>
+          <th>ITEMS</th>
+          <th>AMOUNT</th>
+          <th>STATUS</th>
+          <th>PAYMENT</th>
+          <th>ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr data-status="{{ order.status }}">
+          <td>
+            <div class="order-id-cell">
+              {{ order.order_id|linebreaksbr }}
+            </div>
+          </td>
+          <td>
+            <div class="dist-name">{{ order.distributor.business_name }}</div>
+            <div class="dist-code">{{ order.distributor.code }}</div>
+          </td>
+          <td style="color:#6b7280;">{{ order.order_date|date:"Y-m-d" }}</td>
+          <td>
+            <div class="items-badge">
+              {{ order.items.count }}
+              <span>items</span>
+            </div>
+          </td>
+          <td class="amount-cell">₹{{ order.total_amount|floatformat:"0" }}</td>
+          <td>
+            {% if order.status == 'delivered' %}
+              <span class="status-pill status-delivered">Delivered</span>
+            {% elif order.status == 'processing' %}
+              <span class="status-pill status-processing">Processing</span>
+            {% elif order.status == 'pending' %}
+              <span class="status-pill status-pending">Pending</span>
+            {% elif order.status == 'shipped' %}
+              <span class="status-pill status-shipped">Shipped</span>
+            {% elif order.status == 'cancelled' %}
+              <span class="status-pill status-cancelled">Cancelled</span>
+            {% else %}
+              <span class="status-pill status-pending">{{ order.get_status_display }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if order.payment_status == 'paid' %}
+              <span class="payment-paid">Paid</span>
+            {% elif order.payment_status == 'partial' %}
+              <span class="payment-partial">Partial</span>
+            {% else %}
+              <span class="payment-unpaid">Unpaid</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="#" class="action-view">
+              <i class="ti ti-eye"></i> View
+            </a>
+            <button class="btn-update" onclick="openUpdateModal('{{ order.id }}', '{{ order.status }}', '{{ order.order_id }}')">
+              Update Status
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" style="text-align:center; padding:40px; color:#9ca3af; font-size:0.9rem;">
+            <i class="ti ti-inbox" style="font-size:2rem; display:block; margin-bottom:8px;"></i>
+            No orders found.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-label">Total Orders</div>
+      <div class="summary-value">{{ orders|length }}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Pending</div>
+      <div class="summary-value orange">{{ status_counts.pending }}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Processing</div>
+      <div class="summary-value blue">{{ status_counts.processing }}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Shipped</div>
+      <div class="summary-value purple">{{ status_counts.shipped }}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Delivered</div>
+      <div class="summary-value green">{{ status_counts.delivered }}</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Update Status Modal -->
+<div class="modal-backdrop-custom" id="updateModal">
+  <div class="modal-box">
+    <h3>Update Order Status</h3>
+    <p id="modalOrderLabel">Change the status for this order.</p>
+    <form method="post" id="updateStatusForm">
+      {% csrf_token %}
+      <input type="hidden" name="order_id" id="modalOrderId">
+      <select name="status" class="modal-select" id="modalStatusSelect">
+        {% for val, label in status_choices %}
+        <option value="{{ val }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel-modal" onclick="closeUpdateModal()">Cancel</button>
+        <button type="submit" class="btn-save-modal">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openUpdateModal(orderId, currentStatus, orderLabel) {
+    document.getElementById('modalOrderId').value = orderId;
+    document.getElementById('modalOrderLabel').textContent = 'Updating status for: ' + orderLabel;
+    document.getElementById('modalStatusSelect').value = currentStatus;
+    document.getElementById('updateModal').classList.add('open');
+  }
+  function closeUpdateModal() {
+    document.getElementById('updateModal').classList.remove('open');
+  }
+  document.getElementById('updateModal').addEventListener('click', function(e) {
+    if (e.target === this) closeUpdateModal();
+  });
+
+  function setStatusFilter(status) {
+    const url = new URL(window.location.href);
+    if (status) url.searchParams.set('status', status);
+    else url.searchParams.delete('status');
+    window.location.href = url.toString();
+  }
+
+  function filterOrders() {
+    const q = document.getElementById('orderSearch').value.toLowerCase();
+    document.querySelectorAll('#ordersTable tbody tr[data-status]').forEach(row => {
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(q) ? '' : 'none';
+    });
+  }
+</script>
+{% endblock %}

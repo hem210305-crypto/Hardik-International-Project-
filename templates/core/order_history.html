@@ -1,0 +1,36 @@
+{% extends "core/base_distributor.html" %}
+{% block title %}Order History — Hardik International{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Your Orders</h3>
+    <div class="card-options">
+      <form class="d-flex gap-2">
+        <input type="text" name="search" class="form-control form-control-sm" placeholder="Search Order ID…" value="{{ search }}">
+        <button class="btn btn-sm btn-primary">Search</button>
+      </form>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-vcenter card-table">
+      <thead>
+        <tr><th>Order ID</th><th>Date</th><th>Items</th><th>Amount</th><th>Payment</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+          <tr>
+            <td>{{ order.order_id }}</td>
+            <td>{{ order.order_date }}</td>
+            <td>{{ order.item_count }}</td>
+            <td>₹{{ order.total_amount }}</td>
+            <td><span class="badge bg-{% if order.payment_status == 'paid' %}success{% elif order.payment_status == 'partial' %}warning{% else %}danger{% endif %}">{{ order.get_payment_status_display }}</span></td>
+            <td><span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'pending' %}warning{% elif order.status == 'cancelled' %}danger{% else %}info{% endif %}">{{ order.get_status_display }}</span></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-center text-muted">No orders found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

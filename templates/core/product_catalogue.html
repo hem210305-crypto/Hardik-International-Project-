@@ -1,0 +1,42 @@
+{% extends "core/base_distributor.html" %}
+{% block title %}Product Catalogue — Hardik International{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Products</h3>
+    <div class="card-options">
+      <form class="d-flex gap-2">
+        <input type="text" name="search" class="form-control form-control-sm" placeholder="Search…" value="{{ search }}">
+        <select name="category" class="form-select form-select-sm">
+          <option value="">All Categories</option>
+          {% for cat in categories %}<option value="{{ cat.slug }}" {% if selected_category == cat.slug %}selected{% endif %}>{{ cat.name }}</option>{% endfor %}
+        </select>
+        <button class="btn btn-sm btn-primary">Filter</button>
+      </form>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-vcenter card-table">
+      <thead><tr><th>Product</th><th>SKU</th><th>Category</th><th>MRP</th><th>Price</th><th>Stock</th></tr></thead>
+      <tbody>
+        {% for p in products %}
+          <tr>
+            <td><strong>{{ p.name }}</strong>{% if p.description %}<div class="text-muted small">{{ p.description|truncatechars:60 }}</div>{% endif %}</td>
+            <td>{{ p.sku }}</td>
+            <td>{{ p.category.name|default:"—" }}</td>
+            <td class="text-muted"><s>₹{{ p.mrp }}</s></td>
+            <td class="text-success fw-bold">₹{{ p.selling_price }}</td>
+            <td>
+              {% if p.stock_quantity == 0 %}<span class="badge bg-danger">Out of Stock</span>
+              {% elif p.stock_quantity <= p.min_stock_level %}<span class="badge bg-warning">Low Stock</span>
+              {% else %}<span class="badge bg-success">In Stock</span>{% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-center text-muted">No products found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

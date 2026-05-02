@@ -1,0 +1,47 @@
+{% extends "core/base_admin.html" %}
+{% block title %}Staff Management — Hardik International{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Staff Members</h3>
+    <div class="card-options">
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStaff">+ Add Staff</button>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-vcenter card-table">
+      <thead><tr><th>Username</th><th>Full Name</th><th>Email</th><th>Active</th><th>Permissions</th></tr></thead>
+      <tbody>
+        {% for member in staff_members %}
+          <tr>
+            <td>{{ member.username }}</td>
+            <td>{{ member.get_full_name|default:"—" }}</td>
+            <td>{{ member.email|default:"—" }}</td>
+            <td>{% if member.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-danger">Inactive</span>{% endif %}</td>
+            <td><a href="{% url 'admin_staff_access' member.pk %}" class="btn btn-sm btn-outline-secondary">Manage Access</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-center text-muted">No staff members yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal modal-blur fade" id="addStaff" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post">
+        {% csrf_token %}
+        <div class="modal-header"><h5 class="modal-title">Add Staff Member</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div class="mb-3"><label class="form-label">Full Name *</label><input type="text" name="full_name" class="form-control" required></div>
+          <div class="mb-3"><label class="form-label">Email *</label><input type="email" name="email" class="form-control" required></div>
+          <div class="mb-3"><label class="form-label">Password</label><input type="text" name="password" class="form-control" placeholder="Leave blank for Staff@123"></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Create Staff</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "core/base_distributor.html" %}
+{% block title %}Profile & Support — Hardik International{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Edit Profile</h3></div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label">Owner Name</label><input type="text" name="owner_name" class="form-control" value="{{ distributor.owner_name }}"></div>
+            <div class="col-md-6"><label class="form-label">Phone</label><input type="text" name="phone" class="form-control" value="{{ distributor.phone }}"></div>
+            <div class="col-md-6"><label class="form-label">Email</label><input type="email" name="email" class="form-control" value="{{ distributor.email }}"></div>
+            <div class="col-12"><label class="form-label">Street Address</label><input type="text" name="street_address" class="form-control" value="{{ distributor.street_address }}"></div>
+            <div class="col-md-4"><label class="form-label">City</label><input type="text" name="city" class="form-control" value="{{ distributor.city }}"></div>
+            <div class="col-md-4"><label class="form-label">State</label><input type="text" name="state" class="form-control" value="{{ distributor.state }}"></div>
+            <div class="col-md-4"><label class="form-label">Pincode</label><input type="text" name="pincode" class="form-control" value="{{ distributor.pincode }}"></div>
+            <div class="col-md-4"><label class="form-label">Bank Name</label><input type="text" name="bank_name" class="form-control" value="{{ distributor.bank_name }}"></div>
+            <div class="col-md-4"><label class="form-label">Account Number</label><input type="text" name="account_number" class="form-control" value="{{ distributor.account_number }}"></div>
+            <div class="col-md-4"><label class="form-label">IFSC Code</label><input type="text" name="ifsc_code" class="form-control" value="{{ distributor.ifsc_code }}"></div>
+          </div>
+          <div class="mt-4"><button type="submit" class="btn btn-primary">Save Changes</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Support</h3></div>
+      <div class="list-group list-group-flush">
+        <div class="list-group-item"><i class="ti ti-phone me-2"></i><strong>Phone:</strong> {{ support_phone }}</div>
+        <div class="list-group-item"><i class="ti ti-mail me-2"></i><strong>Email:</strong> {{ support_email }}</div>
+        <div class="list-group-item"><i class="ti ti-clock me-2"></i><strong>Hours:</strong> {{ support_hours }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

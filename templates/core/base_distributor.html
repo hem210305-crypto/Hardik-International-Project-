@@ -1,0 +1,98 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    .msg-error   { padding:10px 16px;margin-bottom:12px;border-radius:8px;font-size:13px;font-weight:500;background:#fee2e2;color:#b91c1c; }
+    .msg-success { padding:10px 16px;margin-bottom:12px;border-radius:8px;font-size:13px;font-weight:500;background:#dcfce7;color:#15803d; }
+  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Hardik International — Distributor{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <style>
+    :root { --sidebar-active: #0052a5; }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+<div class="admin-layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-logo">H</div>
+      <div class="sidebar-brand-text">
+        <div class="portal-name">Distributor Portal</div>
+        <div class="company-name">Hardik International Pvt Ltd</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="{% url 'dashboard' %}"        class="nav-item {% if section == 'dashboard' %}active{% endif %}">
+        <i class="fa-solid fa-gauge-high"></i> Dashboard
+      </a>
+      <a href="{% url 'place_order' %}"      class="nav-item {% if section == 'place-order' %}active{% endif %}">
+        <i class="fa-solid fa-cart-plus"></i> Place Order
+      </a>
+      <a href="{% url 'order_history' %}"    class="nav-item {% if section == 'order-history' %}active{% endif %}">
+        <i class="fa-solid fa-clock-rotate-left"></i> Order History
+      </a>
+      <a href="{% url 'bills_invoices' %}"   class="nav-item {% if section == 'bills-invoices' %}active{% endif %}">
+        <i class="fa-solid fa-file-invoice"></i> Bills & Invoices
+      </a>
+      <a href="{% url 'ledger_payments' %}"  class="nav-item {% if section == 'ledger-payments' %}active{% endif %}">
+        <i class="fa-solid fa-credit-card"></i> Ledger & Payments
+      </a>
+      <a href="{% url 'product_catalogue' %}" class="nav-item {% if section == 'catalogue' %}active{% endif %}">
+        <i class="fa-solid fa-box-open"></i> Product Catalogue
+      </a>
+      <a href="{% url 'announcements' %}"    class="nav-item {% if section == 'announcements' %}active{% endif %}">
+        <i class="fa-solid fa-bullhorn"></i> Announcements
+      </a>
+      <a href="{% url 'profile_support' %}"  class="nav-item {% if section == 'profile-support' %}active{% endif %}">
+        <i class="fa-solid fa-user-circle"></i> Profile & Support
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ===== HEADER ===== -->
+  <header class="admin-header">
+    <div class="btn-bell">
+      <i class="fa-regular fa-bell" style="color:#6b7280;font-size:15px;"></i>
+    </div>
+    <div class="header-user">
+      <div>
+        <div class="user-name">{{ distributor.business_name|default:request.user.username }}</div>
+        <div class="user-email">{{ distributor.email|default:request.user.email }}</div>
+      </div>
+    </div>
+    <a href="{% url 'logout' %}" class="btn-logout">
+      <i class="fa-solid fa-right-from-bracket"></i> Logout
+    </a>
+  </header>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="admin-main">
+    <div class="page-header-row">
+      <h1 class="page-title">{{ page_title }}</h1>
+      <p class="page-subtitle">{{ page_subtitle }}</p>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="{% if message.tags == 'error' %}msg-error{% else %}msg-success{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

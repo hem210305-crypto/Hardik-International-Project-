@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - Factory Admin{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="container-xl">
+    <div class="row align-items-center">
+      <div class="col">
+        <div class="subheader">OVERVIEW</div>
+        <h2 class="page-title">Dashboard</h2>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="container-xl">
+    <div class="row row-cards mb-4">
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-body">
+            <div class="subheader">Active Clients</div>
+            <div class="h1">{{ total_clients }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-body">
+            <div class="subheader">Total Users</div>
+            <div class="h1">{{ total_users }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-body">
+            <div class="subheader">Logged in as</div>
+            <div class="h1">{{ request.user.username }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Recent Clients</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+          <thead>
+            <tr><th>Name</th><th>Email</th><th>Phone</th><th>Joined</th></tr>
+          </thead>
+          <tbody>
+            {% for client in recent_clients %}
+            <tr>
+              <td>{{ client.name }}</td>
+              <td>{{ client.email }}</td>
+              <td>{{ client.phone|default:"-" }}</td>
+              <td>{{ client.created_at|date:"d M Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-secondary">No clients yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

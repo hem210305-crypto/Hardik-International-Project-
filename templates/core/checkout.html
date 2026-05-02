@@ -1,0 +1,49 @@
+{% extends "core/base_distributor.html" %}
+{% block title %}Checkout — Hardik International{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Order Details</h3></div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Draft Person Name</label>
+            <input type="text" name="draft_person_name" class="form-control" placeholder="Name of person placing the order">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Sales Person Name</label>
+            <input type="text" name="sales_person_name" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Courier / Shipping Method</label>
+            <input type="text" name="courier_name" class="form-control" placeholder="e.g. DTDC, BlueDart">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Delivery Note</label>
+            <textarea name="delivery_note" class="form-control" rows="3" placeholder="Any special instructions…"></textarea>
+          </div>
+          <button type="submit" class="btn btn-success w-100">Confirm & Place Order</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Order Summary</h3></div>
+      <div class="list-group list-group-flush">
+        {% for item in cart_items %}
+          <div class="list-group-item d-flex justify-content-between">
+            <span>{{ item.product.name }} × {{ item.quantity }}</span>
+            <strong>₹{{ item.line_total }}</strong>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="card-footer d-flex justify-content-between">
+        <strong>Total</strong><strong class="text-success">₹{{ cart_total }}</strong>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

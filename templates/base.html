@@ -1,0 +1,70 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Admin{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/css/tabler.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+<div class="page">
+
+  <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <h1 class="navbar-brand navbar-brand-autodark">
+        <a href="{% url 'dashboard' %}">Factory Admin</a>
+      </h1>
+      <div class="collapse navbar-collapse" id="navbar-menu">
+        <ul class="navbar-nav pt-lg-3">
+          <li class="nav-item">
+            <a class="nav-link {% block nav_dashboard %}{% endblock %}" href="{% url 'dashboard' %}">
+              <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-home"></i></span>
+              <span class="nav-link-title">Dashboard</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% block nav_clients %}{% endblock %}" href="{% url 'clients' %}">
+              <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-users"></i></span>
+              <span class="nav-link-title">Clients</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% block nav_users %}{% endblock %}" href="{% url 'users' %}">
+              <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-user"></i></span>
+              <span class="nav-link-title">Users</span>
+            </a>
+          </li>
+        </ul>
+        <div class="mt-auto pb-3">
+          <a href="{% url 'logout' %}" class="btn btn-outline-danger w-100">
+            <i class="ti ti-logout me-1"></i> Logout
+          </a>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="page-wrapper">
+    {% if messages %}
+      <div class="container-xl pt-3">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/js/tabler.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{% extends "core/base_admin.html" %}
+{% block title %}Settings — Hardik International{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header"><h3 class="card-title">Company Settings</h3></div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-md-6"><label class="form-label">Company Name</label><input type="text" name="company_name" class="form-control" value="{{ setting.company_name }}"></div>
+        <div class="col-md-6"><label class="form-label">Currency</label><input type="text" name="currency" class="form-control" value="{{ setting.currency }}"></div>
+        <div class="col-md-6"><label class="form-label">Support Email</label><input type="email" name="support_email" class="form-control" value="{{ setting.support_email }}"></div>
+        <div class="col-md-6"><label class="form-label">Support Phone</label><input type="text" name="support_phone" class="form-control" value="{{ setting.support_phone }}"></div>
+        <div class="col-12"><label class="form-label">Support Hours</label><input type="text" name="support_hours" class="form-control" value="{{ setting.support_hours }}"></div>
+      </div>
+      <div class="mt-4"><button type="submit" class="btn btn-primary">Save Settings</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "core/base_distributor.html" %}
+{% block title %}Ledger & Payments — Hardik International{% endblock %}
+{% block content %}
+<div class="row mb-3">
+  <div class="col-sm-4"><div class="card text-center"><div class="card-body"><div class="subheader">Outstanding</div><div class="h1 text-danger">₹{{ summary.outstanding }}</div></div></div></div>
+  <div class="col-sm-4"><div class="card text-center"><div class="card-body"><div class="subheader">Total Paid</div><div class="h1 text-success">₹{{ summary.paid }}</div></div></div></div>
+  <div class="col-sm-4"><div class="card text-center"><div class="card-body"><div class="subheader">Current Balance</div><div class="h1">₹{{ summary.balance }}</div></div></div></div>
+</div>
+<div class="card">
+  <div class="card-header"><h3 class="card-title">Ledger Entries</h3></div>
+  <div class="table-responsive">
+    <table class="table table-vcenter card-table">
+      <thead><tr><th>Date</th><th>Description</th><th>Reference</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead>
+      <tbody>
+        {% for entry in ledger_entries %}
+          <tr>
+            <td>{{ entry.entry_date }}</td>
+            <td>{{ entry.description }}</td>
+            <td>{{ entry.reference }}</td>
+            <td class="text-danger">{% if entry.debit %}₹{{ entry.debit }}{% endif %}</td>
+            <td class="text-success">{% if entry.credit %}₹{{ entry.credit }}{% endif %}</td>
+            <td><strong>₹{{ entry.balance }}</strong></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-center text-muted">No ledger entries yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "core/base_distributor.html" %}
+{% block title %}Announcements — Hardik International{% endblock %}
+{% block content %}
+<div class="row row-cards">
+  {% for ann in announcements %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card">
+        <div class="card-header">
+          <span class="badge bg-{% if ann.category == 'urgent' %}danger{% elif ann.category == 'important' %}warning{% elif ann.category == 'maintenance' %}secondary{% else %}info{% endif %} me-2">
+            {{ ann.get_category_display }}
+          </span>
+          <h4 class="card-title mb-0">{{ ann.title }}</h4>
+        </div>
+        <div class="card-body">
+          <p class="text-muted mb-0">{{ ann.content }}</p>
+        </div>
+        <div class="card-footer text-muted">{{ ann.published_at }}</div>
+      </div>
+    </div>
+  {% empty %}
+    <div class="col-12 text-center text-muted py-5">No announcements at this time.</div>
+  {% endfor %}
+</div>
+{% endblock %}
