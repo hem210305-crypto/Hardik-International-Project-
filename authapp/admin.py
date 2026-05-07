@@ -23,12 +23,12 @@ class UserAdmin(BaseUserAdmin):
     # Add role + phone to the user edit form
     fieldsets = BaseUserAdmin.fieldsets + (
         ('Portal Settings', {
-            'fields': ('role', 'phone'),
+            'fields': ('role', 'phone', 'position'),
         }),
     )
     add_fieldsets = BaseUserAdmin.add_fieldsets + (
         ('Portal Settings', {
-            'fields': ('role', 'phone'),
+            'fields': ('role', 'phone', 'position'),
         }),
     )
 
@@ -41,9 +41,5 @@ class UserAdmin(BaseUserAdmin):
 
 @admin.register(StaffPermission)
 class StaffPermissionAdmin(admin.ModelAdmin):
-    list_display = (
-        'user', 'can_manage_products', 'can_manage_distributors',
-        'can_manage_orders', 'can_manage_invoices',
-        'can_manage_announcements', 'can_view_analytics', 'can_manage_settings',
-    )
+    list_display = ('user', 'dashboard_view', 'active_permissions_count', 'access_expiry')
     search_fields = ('user__username', 'user__email')

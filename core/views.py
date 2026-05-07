@@ -12,6 +12,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.db.models import F, Sum
 from django.shortcuts import get_object_or_404, redirect, render
+from django.core.files.storage import FileSystemStorage
 
 from authapp.models import StaffPermission
 from .models import (
@@ -455,8 +456,8 @@ def admin_distributors(request):
         email = request.POST.get('email', '').strip()
         
         # Check for duplicates before attempting to create
-        if Distributor.objects.filter(email=email).exists() or User.objects.filter(email=email).exists():
-            messages.error(request, f"A distributor or user with the email '{email}' already exists. Please use a different email.")
+        if Distributor.objects.filter(email=email).exists():
+            messages.error(request, f"A distributor with the email '{email}' already exists. Please use a different email.")
         else:
             try:
                 code = f"DIST-{Distributor.objects.count() + 1:04d}"
@@ -482,16 +483,7 @@ def admin_distributors(request):
                     payment_terms_days=int(request.POST.get('payment_terms_days', '30') or 30),
                     status=request.POST.get('status', Distributor.Status.ACTIVE),
                 )
-                username = email.split('@')[0].lower() if email else code.lower()
-                user = User.objects.create_user(
-                    username=username, email=email, password='Distributor@123',
-                    first_name=distributor.business_name,
-                )
-                user.role = User.Role.DISTRIBUTOR
-                user.save()
-                distributor.user = user
-                distributor.save(update_fields=['user'])
-                messages.success(request, f'Distributor created successfully. Login: {username} / Distributor@123')
+                messages.success(request, 'Distributor created successfully.')
             except Exception as e:
                 messages.error(request, f"Error creating distributor: {str(e)}")
                 
@@ -640,51 +632,247 @@ def admin_invoices(request):
 @role_required('admin')
 def admin_announcements(request):
     if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'delete':
+            ann_id = request.POST.get('ann_id')
+            try:
+                Announcement.objects.get(id=ann_id).delete()
+                messages.success(request, 'Announcement deleted successfully.')
+            except Announcement.DoesNotExist:
+                messages.error(request, 'Announcement not found.')
+            return redirect('admin_announcements')
+            
         status = (Announcement.PublishStatus.DRAFT
                   if request.POST.get('submit_mode') == 'draft'
                   else Announcement.PublishStatus.PUBLISHED)
-        Announcement.objects.create(
-            title=request.POST.get('title', '').strip(),
-            category=request.POST.get('category', Announcement.Category.GENERAL),
-            content=request.POST.get('content', '').strip(),
-            status=status,
-            published_at=datetime.date.today(),
-        )
-        messages.success(request, 'Announcement saved.')
+                  
+        image_url = request.POST.get('image_url', '').strip()
+        if 'image_file' in request.FILES:
+            image_file = request.FILES['image_file']
+            fs = FileSystemStorage()
+            filename = fs.save(image_file.name, image_file)
+            image_url = fs.url(filename)
+
+        title = request.POST.get('title', '').strip()
+        category = request.POST.get('category', Announcement.Category.GENERAL)
+        content = request.POST.get('content', '').strip()
+        edit_id = request.POST.get('edit_ann_id')
+
+        if edit_id:
+            try:
+                ann = Announcement.objects.get(id=edit_id)
+                ann.title = title
+                ann.category = category
+                ann.content = content
+                ann.status = status
+                if image_url or 'image_file' in request.FILES:
+                    ann.image_url = image_url
+                ann.save()
+                messages.success(request, 'Announcement updated.')
+            except Announcement.DoesNotExist:
+                messages.error(request, 'Announcement not found.')
+        else:
+            Announcement.objects.create(
+                title=title,
+                category=category,
+                content=content,
+                image_url=image_url,
+                status=status,
+                published_at=datetime.date.today(),
+            )
+            messages.success(request, 'Announcement saved.')
         return redirect('admin_announcements')
 
     items = Announcement.objects.all()
+    
+    # Calculate summary metrics
+    today = datetime.date.today()
+    this_month_start = today.replace(day=1)
+    
+    totals = {
+        'total': items.count(),
+        'published': items.filter(status=Announcement.PublishStatus.PUBLISHED).count(),
+        'this_month': items.filter(published_at__gte=this_month_start).count(),
+        'urgent': items.filter(category=Announcement.Category.URGENT).count(),
+    }
+    
     ctx = admin_ctx(
         request, 'announcements', 'Announcements Management',
         'Create and manage announcements.',
         announcements=items,
         category_choices=Announcement.Category.choices,
+        totals=totals,
     )
     return render(request, 'core/admin_announcements.html', ctx)
+
+@role_required('admin')
+def admin_distributors(request):
+    """Handle the Distributors Management page.
+    GET: render the page with distributor list and summary counts.
+    POST: create a new distributor from the submitted form.
+    The modal form in `admin_distributors.html` posts to this same URL.
+    """
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'delete':
+            distributor_id = request.POST.get('distributor_id')
+            try:
+                Distributor.objects.get(id=distributor_id).delete()
+                messages.success(request, 'Distributor deleted successfully.')
+            except Distributor.DoesNotExist:
+                messages.error(request, 'Distributor not found.')
+        
+        elif action == 'edit':
+            distributor_id = request.POST.get('distributor_id')
+            try:
+                dist = Distributor.objects.get(id=distributor_id)
+                dist.business_name = request.POST.get('business_name', dist.business_name).strip()
+                dist.owner_name = request.POST.get('owner_name', dist.owner_name).strip()
+                dist.phone = request.POST.get('phone', dist.phone).strip()
+                dist.credit_limit = request.POST.get('credit_limit', dist.credit_limit)
+                dist.payment_terms_days = request.POST.get('payment_terms_days', dist.payment_terms_days)
+                dist.status = request.POST.get('status', dist.status)
+                dist.save()
+                messages.success(request, f'Distributor "{dist.business_name}" updated successfully.')
+            except Distributor.DoesNotExist:
+                messages.error(request, 'Distributor not found.')
+
+        else:
+            # Add new distributor
+            business_name = request.POST.get('business_name', '').strip()
+            owner_name = request.POST.get('owner_name', '').strip()
+            email = request.POST.get('email', '').strip()
+            phone = request.POST.get('phone', '').strip()
+            alternate_phone = request.POST.get('alternate_phone', '').strip()
+            street_address = request.POST.get('street_address', '').strip()
+            city = request.POST.get('city', '').strip()
+            state = request.POST.get('state', '').strip()
+            pincode = request.POST.get('pincode', '').strip()
+            gst_number = request.POST.get('gst_number', '').strip()
+            drug_license_number = request.POST.get('drug_license_number', '').strip()
+            pan_number = request.POST.get('pan_number', '').strip()
+            credit_limit = request.POST.get('credit_limit', '0').strip()
+            payment_terms_days = request.POST.get('payment_terms_days', '0').strip()
+            notes = request.POST.get('notes', '').strip()
+            # Basic validation – at minimum business name and primary phone are required
+            if not business_name or not phone:
+                messages.error(request, 'Business name and primary phone are required.')
+            else:
+                Distributor.objects.create(
+                    business_name=business_name,
+                    owner_name=owner_name,
+                    email=email,
+                    phone=phone,
+                    alternate_phone=alternate_phone or None,
+                    street_address=street_address,
+                    city=city,
+                    state=state,
+                    pincode=pincode,
+                    gst_number=gst_number or None,
+                    drug_license_number=drug_license_number,
+                    pan_number=pan_number or None,
+                    credit_limit=credit_limit,
+                    payment_terms_days=payment_terms_days,
+                    notes=notes or None,
+                    status=Distributor.Status.ACTIVE,  # default to active on creation
+                )
+                messages.success(request, f'Distributor "{business_name}" added successfully.')
+        return redirect('admin_distributors')
+
+    # GET request – list distributors and compute summary totals
+    distributors = Distributor.objects.all().order_by('-joined_on')
+    totals = {
+        'active': distributors.filter(status=Distributor.Status.ACTIVE).count(),
+        'inactive': distributors.filter(status=Distributor.Status.INACTIVE).count(),
+        'suspended': distributors.filter(status=Distributor.Status.SUSPENDED).count(),
+    }
+    ctx = admin_ctx(
+        request,
+        'distributors',
+        'Distributors Management',
+        'Manage distributor accounts and permissions.',
+        distributors=distributors,
+        totals=totals,
+    )
+    return render(request, 'core/admin_distributors.html', ctx)
 
 
 @role_required('admin')
 def admin_staff(request):
     if request.method == 'POST':
-        email = request.POST.get('email', '').strip()
-        full_name = request.POST.get('full_name', '').strip()
-        names = full_name.split(' ', 1)
-        username = email.split('@')[0].lower() if email else f"staff{User.objects.count() + 1}"
-        user = User.objects.create_user(
-            username=username, email=email,
-            password=request.POST.get('password', 'Staff@123') or 'Staff@123',
-            first_name=names[0], last_name=names[1] if len(names) > 1 else '',
-        )
-        user.role = User.Role.STAFF
-        user.save()
-        StaffPermission.objects.create(user=user)
-        messages.success(request, f'Staff created. Login: {username}')
+        action = request.POST.get('action')
+        
+        if action == 'delete':
+            staff_id = request.POST.get('staff_id')
+            try:
+                User.objects.get(id=staff_id, role=User.Role.STAFF).delete()
+                messages.success(request, 'Staff member removed successfully.')
+            except User.DoesNotExist:
+                messages.error(request, 'Staff member not found.')
+        
+        elif action == 'edit':
+            staff_id = request.POST.get('staff_id')
+            try:
+                user = User.objects.get(id=staff_id, role=User.Role.STAFF)
+                full_name = request.POST.get('full_name', '').strip()
+                names = full_name.split(' ', 1)
+                user.first_name = names[0]
+                user.last_name = names[1] if len(names) > 1 else ''
+                user.email = request.POST.get('email', user.email).strip()
+                user.position = request.POST.get('position', user.position).strip()
+                user.save()
+                messages.success(request, f'Staff member "{user.get_full_name()}" updated.')
+            except User.DoesNotExist:
+                messages.error(request, 'Staff member not found.')
+
+        else:
+            # Add new staff
+            email = request.POST.get('email', '').strip()
+            full_name = request.POST.get('full_name', '').strip()
+            position = request.POST.get('position', '').strip()
+            password = request.POST.get('password', '').strip()
+            
+            if not email or not full_name:
+                messages.error(request, 'Email and Full Name are required.')
+            else:
+                names = full_name.split(' ', 1)
+                username = email.split('@')[0].lower()
+                # Ensure unique username
+                base_username = username
+                counter = 1
+                while User.objects.filter(username=username).exists():
+                    username = f"{base_username}{counter}"
+                    counter += 1
+                
+                user = User.objects.create_user(
+                    username=username, 
+                    email=email,
+                    password=password or 'Staff@123',
+                    first_name=names[0], 
+                    last_name=names[1] if len(names) > 1 else '',
+                )
+                user.role = User.Role.STAFF
+                user.position = position
+                user.save()
+                StaffPermission.objects.create(user=user)
+                messages.success(request, f'Staff member created successfully. Username: {username}')
+        
         return redirect('admin_staff')
 
-    staff_members = User.objects.filter(role=User.Role.STAFF).order_by('username')
+    staff_members = User.objects.filter(role=User.Role.STAFF).order_by('-id')
+    
+    # Summary stats
+    total_staff = staff_members.count()
+    active_staff = staff_members.filter(is_active=True).count()
+    inactive_staff = total_staff - active_staff
+    
     ctx = admin_ctx(
-        request, 'staff', 'Staff Management', 'Manage staff accounts and permissions.',
+        request, 'staff', 'Staff Management', 'Manage staff accounts and access permissions',
         staff_members=staff_members,
+        total_staff=total_staff,
+        active_staff=active_staff,
+        inactive_staff=inactive_staff,
     )
     return render(request, 'core/admin_staff.html', ctx)
 
@@ -693,28 +881,114 @@ def admin_staff(request):
 def admin_staff_access(request, pk):
     staff_user = get_object_or_404(User, pk=pk, role=User.Role.STAFF)
     permission, _ = StaffPermission.objects.get_or_create(user=staff_user)
-    permission_fields = [
-        ('can_manage_products', 'Manage Products'),
-        ('can_manage_distributors', 'Manage Distributors'),
-        ('can_manage_orders', 'Manage Orders'),
-        ('can_manage_invoices', 'Manage Invoices'),
-        ('can_manage_announcements', 'Manage Announcements'),
-        ('can_view_analytics', 'View Analytics'),
-        ('can_manage_settings', 'Manage Settings'),
+    
+    # Define permission groups for the template
+    permission_groups = [
+        {
+            'name': 'Dashboard',
+            'desc': 'View dashboard and summary statistics',
+            'icon': 'ti-dashboard',
+            'perms': [('dashboard_view', 'View', 'btn-outline-primary', 'ti-eye')]
+        },
+        {
+            'name': 'Distributors Management',
+            'desc': 'Manage distributor accounts and information',
+            'icon': 'ti-users',
+            'perms': [
+                ('distributors_view', 'View', 'btn-outline-primary', 'ti-eye'),
+                ('distributors_create', 'Create', 'btn-outline-success', 'ti-plus'),
+                ('distributors_edit', 'Edit', 'btn-outline-warning', 'ti-edit'),
+                ('distributors_delete', 'Delete', 'btn-outline-danger', 'ti-trash')
+            ]
+        },
+        {
+            'name': 'Products Management',
+            'desc': 'Manage product inventory and pricing',
+            'icon': 'ti-package',
+            'perms': [
+                ('products_view', 'View', 'btn-outline-primary', 'ti-eye'),
+                ('products_create', 'Create', 'btn-outline-success', 'ti-plus'),
+                ('products_edit', 'Edit', 'btn-outline-warning', 'ti-edit'),
+                ('products_delete', 'Delete', 'btn-outline-danger', 'ti-trash')
+            ]
+        },
+        {
+            'name': 'Orders Management',
+            'desc': 'Process and manage customer orders',
+            'icon': 'ti-shopping-cart',
+            'perms': [
+                ('orders_view', 'View', 'btn-outline-primary', 'ti-eye'),
+                ('orders_create', 'Create', 'btn-outline-success', 'ti-plus'),
+                ('orders_edit', 'Edit', 'btn-outline-warning', 'ti-edit'),
+                ('orders_delete', 'Delete', 'btn-outline-danger', 'ti-trash'),
+                ('orders_approve', 'Approve', 'btn-outline-purple', 'ti-check')
+            ]
+        },
+        {
+            'name': 'Invoices & Billing',
+            'desc': 'Handle invoices and billing',
+            'icon': 'ti-file-text',
+            'perms': [
+                ('invoices_view', 'View', 'btn-outline-primary', 'ti-eye'),
+                ('invoices_create', 'Create', 'btn-outline-success', 'ti-plus'),
+                ('invoices_edit', 'Edit', 'btn-outline-warning', 'ti-edit'),
+                ('invoices_delete', 'Delete', 'btn-outline-danger', 'ti-trash'),
+                ('invoices_download', 'Download', 'btn-outline-info', 'ti-download')
+            ]
+        },
+        {
+            'name': 'Announcements',
+            'desc': 'Create and manage announcements',
+            'icon': 'ti-speakerphone',
+            'perms': [
+                ('announcements_view', 'View', 'btn-outline-primary', 'ti-eye'),
+                ('announcements_create', 'Create', 'btn-outline-success', 'ti-plus'),
+                ('announcements_edit', 'Edit', 'btn-outline-warning', 'ti-edit'),
+                ('announcements_delete', 'Delete', 'btn-outline-danger', 'ti-trash')
+            ]
+        },
+        {
+            'name': 'Analytics & Report',
+            'desc': 'View analytics and export reports',
+            'icon': 'ti-chart-bar',
+            'perms': [
+                ('analytics_view', 'View', 'btn-outline-primary', 'ti-eye'),
+                ('analytics_export', 'Export', 'btn-outline-cyan', 'ti-file-export')
+            ]
+        },
+        {
+            'name': 'System Settings',
+            'desc': 'Configure system settings',
+            'icon': 'ti-settings',
+            'perms': [
+                ('settings_view', 'View', 'btn-outline-primary', 'ti-eye'),
+                ('settings_edit', 'Edit', 'btn-outline-warning', 'ti-edit')
+            ]
+        }
     ]
+
     if request.method == 'POST':
-        for field, _ in permission_fields:
-            setattr(permission, field, field in request.POST)
+        # Reset all flags
+        for group in permission_groups:
+            for perm_code, _, _, _ in group['perms']:
+                setattr(permission, perm_code, perm_code in request.POST)
+        
+        expiry = request.POST.get('access_expiry')
+        if expiry:
+            permission.access_expiry = expiry
+        else:
+            permission.access_expiry = None
+            
         permission.save()
-        messages.success(request, f'Permissions updated for {staff_user.username}.')
-        return redirect('admin_staff_access', pk=pk)
+        messages.success(request, f'Access control updated for {staff_user.get_full_name()}.')
+        return redirect('admin_staff')
 
     ctx = admin_ctx(
-        request, 'staff', 'Access Control',
-        f'Permissions for {staff_user.get_full_name() or staff_user.username}.',
+        request, 'staff', 'Access Control Panel',
+        f'Manage permissions for {staff_user.get_full_name()}.',
         staff_user=staff_user,
         permission=permission,
-        permission_fields=permission_fields,
+        permission_groups=permission_groups,
     )
     return render(request, 'core/admin_staff_access.html', ctx)
 

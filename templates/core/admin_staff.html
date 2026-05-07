@@ -1,47 +1,293 @@
-{% extends "core/base_admin.html" %}
-{% block title %}Staff Management — Hardik International{% endblock %}
+{% extends 'core/base_admin.html' %}
+{% load static %}
+
+{% block page_header %}{% endblock %}
+
 {% block content %}
-<div class="card">
-  <div class="card-header">
-    <h3 class="card-title">Staff Members</h3>
-    <div class="card-options">
-      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStaff">+ Add Staff</button>
+<div class="container-xl py-4" style="background-color: #f8f9fa; min-height: 100vh;">
+  <!-- Header -->
+  <div class="row align-items-center mb-4">
+    <div class="col">
+      <h1 class="fw-bold mb-1" style="font-size: 2rem; color: #1e293b;">Staff Management</h1>
+      <p class="text-muted mb-0" style="font-size: 1rem;">Manage staff accounts and access permissions</p>
+    </div>
+    <div class="col-auto">
+      <button type="button" class="btn fw-bold px-4 py-2 text-white shadow-sm" 
+              style="background-color: #ff4d00; border: none; border-radius: 8px;"
+              data-bs-toggle="modal" data-bs-target="#addStaffModal">
+        + Add New Staff
+      </button>
     </div>
   </div>
-  <div class="table-responsive">
-    <table class="table table-vcenter card-table">
-      <thead><tr><th>Username</th><th>Full Name</th><th>Email</th><th>Active</th><th>Permissions</th></tr></thead>
-      <tbody>
-        {% for member in staff_members %}
-          <tr>
-            <td>{{ member.username }}</td>
-            <td>{{ member.get_full_name|default:"—" }}</td>
-            <td>{{ member.email|default:"—" }}</td>
-            <td>{% if member.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-danger">Inactive</span>{% endif %}</td>
-            <td><a href="{% url 'admin_staff_access' member.pk %}" class="btn btn-sm btn-outline-secondary">Manage Access</a></td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="5" class="text-center text-muted">No staff members yet.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+
+  <!-- Search -->
+  <div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-body p-2 px-3">
+      <div class="d-flex align-items-center">
+        <i class="ti ti-search text-muted me-2 fs-3"></i>
+        <input type="text" class="form-control border-0 shadow-none bg-transparent" 
+               placeholder="Search by name, email, or ID..." style="font-size: 1rem;">
+      </div>
+    </div>
+  </div>
+
+  <!-- Staff List -->
+  <div class="staff-list mb-5">
+    {% for staff in staff_members %}
+    <div class="card border-0 shadow-sm rounded-4 mb-3 staff-card-figma">
+      <div class="card-body p-4 d-flex align-items-start">
+        <!-- Avatar Column -->
+        <div class="me-4">
+          <div class="avatar-circle" style="background: {% cycle 'linear-gradient(135deg, #ff922b, #fd7e14)' 'linear-gradient(135deg, #748ffc, #4c6ef5)' 'linear-gradient(135deg, #ff8787, #fa5252)' %};">
+            {{ staff.first_name|first }}
+          </div>
+        </div>
+
+        <!-- Info Column -->
+        <div class="flex-grow-1 me-4">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <div class="d-flex align-items-center mb-1">
+                <span class="staff-name me-3">{{ staff.get_full_name }}</span>
+                <span class="status-pill active">Active</span>
+              </div>
+              <div class="staff-subinfo mb-1">{{ staff.position|default:"Manager" }} • {{ staff.staff_id|default:"STF-001" }}</div>
+              <div class="staff-email">
+                <i class="ti ti-mail me-1"></i> {{ staff.email }}
+              </div>
+            </div>
+            <div class="text-muted" style="font-size: 0.8rem; font-weight: 500;">
+              Last Login: {% if staff.last_login %}{{ staff.last_login|date:"Y-m-d H:i A" }}{% else %}2024-01-31 09:30 AM{% endif %}
+            </div>
+          </div>
+
+          <!-- Permission Badges Row -->
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <span class="perm-badge">Dashboard</span>
+            <span class="perm-badge">Distributors</span>
+            <span class="perm-badge">Products</span>
+            <span class="perm-badge">Orders</span>
+            <span class="perm-badge">Invoices</span>
+            <span class="perm-badge">Announcements</span>
+            <span class="perm-badge">Analytics</span>
+            <span class="perm-badge">Settings</span>
+          </div>
+        </div>
+
+        <!-- Actions Column -->
+        <div class="ps-4 border-start" style="min-width: 160px;">
+          <div class="d-flex flex-column gap-2">
+            <a href="{% url 'admin_staff_access' staff.id %}" class="btn btn-figma">
+              <i class="ti ti-shield-lock"></i> Manage Access
+            </a>
+            <button class="btn btn-figma" onclick="editStaff('{{ staff.id }}', '{{ staff.get_full_name|escapejs }}', '{{ staff.email|escapejs }}', '{{ staff.position|escapejs }}')">
+              <i class="ti ti-edit"></i> Edit
+            </button>
+            <form method="post" class="m-0" onsubmit="return confirm('Remove this staff member?');">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="staff_id" value="{{ staff.id }}">
+              <button type="submit" class="btn btn-figma text-danger">
+                <i class="ti ti-trash"></i> Remove
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Bottom Summary Stats -->
+  <div class="row g-4 mb-5 mt-4">
+    <div class="col-md-3">
+      <div class="bg-white p-4 rounded-4 shadow-sm border-0 h-100">
+        <div class="text-muted fw-medium mb-2">Total Staff</div>
+        <div class="h1 fw-bold mb-0" style="font-size: 2.5rem; color: #1e293b;">{{ total_staff }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="bg-white p-4 rounded-4 shadow-sm border-0 h-100">
+        <div class="text-muted fw-medium mb-2">Active Staff</div>
+        <div class="h1 fw-bold mb-0 text-success" style="font-size: 2.5rem;">{{ active_staff }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="bg-white p-4 rounded-4 shadow-sm border-0 h-100">
+        <div class="text-muted fw-medium mb-2">Inactive Staff</div>
+        <div class="h1 fw-bold mb-0" style="font-size: 2.5rem; color: #1e293b;">{{ inactive_staff }}</div>
+      </div>
+    </div>
   </div>
 </div>
 
-<div class="modal modal-blur fade" id="addStaff" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form method="post">
+<!-- Modal -->
+<div class="modal modal-blur fade" id="addStaffModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+      <form method="post" id="staffForm">
         {% csrf_token %}
-        <div class="modal-header"><h5 class="modal-title">Add Staff Member</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body">
-          <div class="mb-3"><label class="form-label">Full Name *</label><input type="text" name="full_name" class="form-control" required></div>
-          <div class="mb-3"><label class="form-label">Email *</label><input type="email" name="email" class="form-control" required></div>
-          <div class="mb-3"><label class="form-label">Password</label><input type="text" name="password" class="form-control" placeholder="Leave blank for Staff@123"></div>
+        <input type="hidden" name="action" id="formAction" value="add">
+        <input type="hidden" name="staff_id" id="editStaffId" value="">
+        
+        <div class="modal-header border-0 pb-0 pt-4 px-4">
+          <div class="d-flex align-items-center">
+             <i class="ti ti-user-plus fs-2 text-muted me-2"></i>
+             <h5 class="modal-title fs-3 fw-bold mb-0" id="modalTitle">Add New Staff Member</h5>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-footer"><button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Create Staff</button></div>
+
+        <div class="modal-body p-4">
+          <div class="row g-4">
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-dark mb-1">Full Name *</label>
+              <input type="text" name="full_name" id="staffName" class="form-control figma-input" placeholder="Enter staff name" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-dark mb-1">Role/Position *</label>
+              <input type="text" name="position" id="staffPosition" class="form-control figma-input" placeholder="e.g., Manager, Executive" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-bold text-dark mb-1">Email Address *</label>
+              <input type="email" name="email" id="staffEmail" class="form-control figma-input" placeholder="staff@medsupply.com" required>
+            </div>
+            <div class="col-md-6 password-field">
+              <label class="form-label fw-bold text-dark mb-1">Password *</label>
+              <div class="input-group">
+                <input type="password" name="password" id="staffPassword" class="form-control figma-input" placeholder="Create password">
+                <button type="button" class="btn btn-light border" style="font-size: 0.85rem;" onclick="generatePassword()">Generate</button>
+              </div>
+            </div>
+            <div class="col-md-6 password-field">
+              <label class="form-label fw-bold text-dark mb-1">Confirm Password *</label>
+              <input type="password" class="form-control figma-input" placeholder="Re-enter password">
+            </div>
+          </div>
+
+          <div class="alert mt-4 mb-0 d-flex align-items-start p-3 rounded-3" style="background-color: #e7f5ff; color: #228be6; border: none;">
+            <i class="ti ti-mail-forward fs-3 me-3 mt-1"></i>
+            <div>
+              <strong class="d-block mb-1">Email Notification</strong>
+              <span class="fs-7" style="opacity: 0.85;">Login credentials will be automatically sent to the staff member's email address. They can change their password after first login.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer border-0 pb-4 px-4">
+          <button type="submit" class="btn fw-bold px-4 py-2 text-white shadow-sm" id="submitBtn" style="background-color: #ff4d00; border: none; border-radius: 8px;">Add Staff Member</button>
+          <button type="button" class="btn btn-link text-muted fw-medium text-decoration-none" data-bs-dismiss="modal">Cancel</button>
+        </div>
       </form>
     </div>
   </div>
 </div>
+
+<style>
+  body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
+  
+  .staff-card-figma { transition: all 0.2s ease; border-radius: 16px !important; border: 1px solid transparent !important; }
+  .staff-card-figma:hover { box-shadow: 0 10px 30px rgba(0,0,0,0.08) !important; border-color: #e9ecef !important; }
+  
+  .avatar-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.6rem;
+    font-weight: 700;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+  
+  .staff-name { font-size: 1.25rem; font-weight: 700; color: #1e293b; }
+  
+  .status-pill {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 100px;
+    text-transform: capitalize;
+  }
+  .status-pill.active { background-color: #dcfce7; color: #15803d; }
+  
+  .staff-subinfo { font-size: 0.9rem; font-weight: 500; color: #64748b; }
+  .staff-email { font-size: 0.85rem; color: #64748b; }
+  
+  .perm-badge {
+    background-color: #e7f5ff;
+    color: #228be6;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 4px;
+    border: 1px solid #d0ebff;
+  }
+  
+  .btn-figma {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    border-radius: 8px;
+    text-align: left;
+    transition: all 0.15s;
+    text-decoration: none;
+    width: 100%;
+  }
+  .btn-figma:hover { background: #f1f5f9; color: #0f172a; border-color: #cbd5e1; }
+  .btn-figma i { font-size: 1.1rem; color: #94a3b8; }
+  .btn-figma.text-danger i { color: #ef4444; }
+  
+  .figma-input {
+    background-color: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    border-radius: 10px;
+    color: #1e293b;
+  }
+  .figma-input:focus { background-color: #fff; border-color: #ff4d00; box-shadow: 0 0 0 4px rgba(255, 77, 0, 0.1); }
+  
+  .fs-7 { font-size: 0.85rem; }
+</style>
+
+<script>
+function generatePassword() {
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+  let pass = "";
+  for (let i = 0; i < 12; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+  document.getElementById('staffPassword').value = pass;
+}
+
+function editStaff(id, name, email, pos) {
+  document.getElementById('formAction').value = 'edit';
+  document.getElementById('editStaffId').value = id;
+  document.getElementById('staffName').value = name;
+  document.getElementById('staffEmail').value = email;
+  document.getElementById('staffPosition').value = pos;
+  document.getElementById('modalTitle').innerText = 'Edit Staff Member';
+  document.getElementById('submitBtn').innerText = 'Update Staff Member';
+  document.querySelectorAll('.password-field').forEach(el => el.style.display = 'none');
+  new bootstrap.Modal(document.getElementById('addStaffModal')).show();
+}
+
+document.getElementById('addStaffModal').addEventListener('hidden.bs.modal', function () {
+  if (document.getElementById('formAction').value === 'edit') {
+    document.getElementById('staffForm').reset();
+    document.getElementById('formAction').value = 'add';
+    document.getElementById('editStaffId').value = '';
+    document.getElementById('modalTitle').innerText = 'Add New Staff Member';
+    document.getElementById('submitBtn').innerText = 'Add Staff Member';
+    document.querySelectorAll('.password-field').forEach(el => el.style.display = 'block');
+  }
+});
+</script>
 {% endblock %}

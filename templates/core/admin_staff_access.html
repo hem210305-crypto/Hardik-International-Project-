@@ -1,41 +1,242 @@
-{% extends "core/base_admin.html" %}
-{% block title %}Access Control — Hardik International{% endblock %}
+{% extends 'core/base_admin.html' %}
+{% load static core_extras %}
+
 {% block content %}
-<div class="card">
-  <div class="card-header">
-    <h3 class="card-title">Permissions for {{ staff_user.get_full_name|default:staff_user.username }}</h3>
-    <div class="card-options">
-      <a href="{% url 'admin_staff' %}" class="btn btn-outline-secondary btn-sm">← Back to Staff</a>
+<div class="container-xl">
+  <!-- Page Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <div class="d-flex align-items-center mb-1">
+        <a href="{% url 'admin_staff' %}" class="btn btn-ghost-secondary btn-sm rounded-circle me-3" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+          <i class="ti ti-arrow-left"></i>
+        </a>
+        <h2 class="page-title text-dark fw-bold mb-0">Access Control Panel</h2>
+      </div>
+      <div class="text-muted ms-5" style="font-size: 0.9rem;">
+        Manage permissions for <strong>{{ staff_user.get_full_name }}</strong> ({{ staff_user.email }})
+      </div>
     </div>
   </div>
-  <div class="card-body">
-    <form method="post">
-      {% csrf_token %}
-      <div class="row g-3">
-        {% for field, label in permission_fields %}
-          <div class="col-md-6 col-lg-4">
-            <label class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" name="{{ field }}"
-                {% if permission|stringformat:"s" and field in permission|stringformat:"s" %}
-                {% endif %}
-                {% comment %}Check actual value{% endcomment %}
-                {% if field == 'can_manage_products' and permission.can_manage_products %}checked{% endif %}
-                {% if field == 'can_manage_distributors' and permission.can_manage_distributors %}checked{% endif %}
-                {% if field == 'can_manage_orders' and permission.can_manage_orders %}checked{% endif %}
-                {% if field == 'can_manage_invoices' and permission.can_manage_invoices %}checked{% endif %}
-                {% if field == 'can_manage_announcements' and permission.can_manage_announcements %}checked{% endif %}
-                {% if field == 'can_view_analytics' and permission.can_view_analytics %}checked{% endif %}
-                {% if field == 'can_manage_settings' and permission.can_manage_settings %}checked{% endif %}
-              >
-              <span class="form-check-label">{{ label }}</span>
-            </label>
+
+  <div class="row row-cards mb-4">
+    <!-- Summary Cards -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-3 bg-azure-lt border-start border-azure border-3">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="bg-azure text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+            <i class="ti ti-shield-check fs-3"></i>
           </div>
-        {% endfor %}
+          <div>
+            <div class="text-muted fs-7">Active Permissions</div>
+            <div class="h3 fw-bold mb-0 text-azure">{{ permission.active_permissions_count }}</div>
+          </div>
+        </div>
       </div>
-      <div class="mt-4">
-        <button type="submit" class="btn btn-primary">Save Permissions</button>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-3 bg-purple-lt border-start border-purple border-3">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="bg-purple text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+            <i class="ti ti-user fs-3"></i>
+          </div>
+          <div>
+            <div class="text-muted fs-7">Role</div>
+            <div class="h3 fw-bold mb-0 text-purple">{{ staff_user.position|default:"Staff" }}</div>
+          </div>
+        </div>
       </div>
-    </form>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-3 bg-success-lt border-start border-success border-3">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+            <i class="ti ti-clock fs-3"></i>
+          </div>
+          <div>
+            <div class="text-muted fs-7">Status</div>
+            <div class="h3 fw-bold mb-0 text-success">Active</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <form method="post" id="permissionsForm">
+    {% csrf_token %}
+    
+    <!-- Quick Access Templates -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center mb-3">
+          <i class="ti ti-template text-orange me-2 fs-3"></i>
+          <h4 class="mb-0 fw-bold">Quick Access Templates</h4>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <button type="button" class="btn btn-outline-secondary px-3 rounded-2 fs-7" onclick="applyTemplate('super')">Super Admin</button>
+          <button type="button" class="btn btn-outline-secondary px-3 rounded-2 fs-7" onclick="applyTemplate('manager')">Manager</button>
+          <button type="button" class="btn btn-outline-secondary px-3 rounded-2 fs-7" onclick="applyTemplate('sales')">Sales Executive</button>
+          <button type="button" class="btn btn-outline-secondary px-3 rounded-2 fs-7" onclick="applyTemplate('inventory')">Inventory Manager</button>
+          <button type="button" class="btn btn-outline-secondary px-3 rounded-2 fs-7" onclick="applyTemplate('view')">View Only</button>
+        </div>
+        <div class="mt-2 text-muted" style="font-size: 0.75rem;">
+          <i class="ti ti-bulb text-warning me-1"></i> Tip: Select a template to quickly apply preset permissions
+        </div>
+      </div>
+    </div>
+
+    <!-- Expiry Date -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4" style="background-color: #fff9db;">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center mb-2">
+          <i class="ti ti-calendar-time text-dark me-2 fs-3"></i>
+          <h4 class="mb-0 fw-bold">Access Expiry Date (Optional)</h4>
+        </div>
+        <div class="row">
+          <div class="col-md-4">
+            <input type="date" name="access_expiry" class="form-control border-0 shadow-none bg-white" value="{{ permission.access_expiry|date:'Y-m-d' }}">
+          </div>
+        </div>
+        <div class="mt-2 text-muted" style="font-size: 0.75rem;">Leave empty for permanent access</div>
+      </div>
+    </div>
+
+    <!-- Module Permissions -->
+    <h4 class="fw-bold mb-3">Module Permissions</h4>
+    <div class="d-flex flex-column gap-3 mb-5">
+      {% for group in permission_groups %}
+      <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+        <div class="card-body p-4">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <div class="d-flex align-items-start">
+                <div class="bg-light p-2 rounded-3 me-3 text-primary">
+                  <i class="ti {{ group.icon }} fs-2"></i>
+                </div>
+                <div>
+                  <div class="d-flex align-items-center">
+                    <h5 class="fw-bold mb-0 me-2">{{ group.name }}</h5>
+                    <!-- Activity Badge - dynamic based on how many in this group are checked -->
+                    <span class="badge bg-success-lt border-0 rounded-pill fs-8 active-count-badge" id="badge-{{ group.name|slugify }}">
+                      0 active
+                    </span>
+                  </div>
+                  <div class="text-muted fs-7">{{ group.desc }}</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 text-md-end mt-3 mt-md-0">
+              <div class="d-flex flex-wrap justify-content-md-end gap-2">
+                {% for perm_code, label, color, icon in group.perms %}
+                <label class="perm-check-label">
+                  <input type="checkbox" name="{{ perm_code }}" class="perm-checkbox d-none" 
+                         data-group="{{ group.name|slugify }}" 
+                         {% if permission|get_attr:perm_code %}checked{% endif %}>
+                  <div class="btn btn-sm {{ color }} rounded-pill px-3 py-1 d-flex align-items-center shadow-none transition-all">
+                    <i class="ti {{ icon }} me-1"></i> {{ label }}
+                  </div>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Sticky Footer -->
+    <div class="card border-0 shadow-lg rounded-3 position-sticky bottom-0 mb-4 z-index-100 bg-white" style="bottom: 20px;">
+      <div class="card-body p-3">
+        <div class="d-flex justify-content-center align-items-center gap-3">
+          <button type="submit" class="btn btn-primary px-5 py-2 fw-bold rounded-2 shadow-sm" style="background-color: #ff4d00; border-color: #ff4d00; min-width: 300px;">
+            <i class="ti ti-circle-check me-2"></i> Save & Apply Permissions
+          </button>
+          <a href="{% url 'admin_staff' %}" class="btn btn-white px-4 py-2 border shadow-sm rounded-2">Cancel</a>
+        </div>
+        <div class="text-center mt-2 text-orange" style="font-size: 0.75rem;">
+          <i class="ti ti-alert-triangle me-1"></i> Important: Changes will take effect immediately. Staff member will be notified via email about permission updates.
+        </div>
+      </div>
+    </div>
+  </form>
 </div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .fs-8 { font-size: 0.7rem; }
+  .active-count-badge { padding: 0.15rem 0.5rem; }
+  .perm-checkbox:checked + div {
+    background-color: currentColor !important;
+    color: #fff !important;
+  }
+  /* Define colors for the fake current-color bg */
+  .perm-check-label .btn-outline-primary { color: #206bc4; }
+  .perm-check-label .btn-outline-success { color: #2fb344; }
+  .perm-check-label .btn-outline-warning { color: #f59f00; }
+  .perm-check-label .btn-outline-danger { color: #d63939; }
+  .perm-check-label .btn-outline-purple { color: #745dfc; }
+  .perm-check-label .btn-outline-info { color: #4299e1; }
+  .perm-check-label .btn-outline-cyan { color: #17a2b8; }
+  
+  .perm-check-label .perm-checkbox:checked + .btn-outline-primary { background-color: #206bc4 !important; border-color: #206bc4 !important; }
+  .perm-check-label .perm-checkbox:checked + .btn-outline-success { background-color: #2fb344 !important; border-color: #2fb344 !important; }
+  .perm-check-label .perm-checkbox:checked + .btn-outline-warning { background-color: #f59f00 !important; border-color: #f59f00 !important; }
+  .perm-check-label .perm-checkbox:checked + .btn-outline-danger { background-color: #d63939 !important; border-color: #d63939 !important; }
+  .perm-check-label .perm-checkbox:checked + .btn-outline-purple { background-color: #745dfc !important; border-color: #745dfc !important; }
+  .perm-check-label .perm-checkbox:checked + .btn-outline-info { background-color: #4299e1 !important; border-color: #4299e1 !important; }
+  .perm-check-label .perm-checkbox:checked + .btn-outline-cyan { background-color: #17a2b8 !important; border-color: #17a2b8 !important; }
+
+  .transition-all { transition: all 0.2s ease; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateBadges() {
+    const groups = {};
+    document.querySelectorAll('.perm-checkbox').forEach(cb => {
+        const group = cb.dataset.group;
+        if (!groups[group]) groups[group] = 0;
+        if (cb.checked) groups[group]++;
+    });
+    
+    for (const [group, count] of Object.entries(groups)) {
+        const badge = document.getElementById(`badge-${group}`);
+        if (badge) {
+            badge.innerText = `${count} active`;
+            badge.className = count > 0 ? 'badge bg-success-lt border-0 rounded-pill fs-8 active-count-badge' : 'badge bg-secondary-lt border-0 rounded-pill fs-8 active-count-badge';
+        }
+    }
+}
+
+document.querySelectorAll('.perm-checkbox').forEach(cb => {
+    cb.addEventListener('change', updateBadges);
+});
+
+function applyTemplate(type) {
+    const perms = {
+        'super': ['dashboard_view', 'distributors_view', 'distributors_create', 'distributors_edit', 'distributors_delete', 'products_view', 'products_create', 'products_edit', 'products_delete', 'orders_view', 'orders_create', 'orders_edit', 'orders_delete', 'orders_approve', 'invoices_view', 'invoices_create', 'invoices_edit', 'invoices_delete', 'invoices_download', 'announcements_view', 'announcements_create', 'announcements_edit', 'announcements_delete', 'analytics_view', 'analytics_export', 'settings_view', 'settings_edit'],
+        'manager': ['dashboard_view', 'distributors_view', 'distributors_create', 'distributors_edit', 'products_view', 'orders_view', 'orders_approve', 'invoices_view', 'announcements_view', 'announcements_create', 'analytics_view'],
+        'sales': ['dashboard_view', 'distributors_view', 'distributors_create', 'orders_view', 'orders_create', 'invoices_view'],
+        'inventory': ['dashboard_view', 'products_view', 'products_create', 'products_edit', 'orders_view'],
+        'view': ['dashboard_view', 'distributors_view', 'products_view', 'orders_view', 'invoices_view', 'announcements_view', 'analytics_view', 'settings_view']
+    };
+    
+    const checkboxes = document.querySelectorAll('.perm-checkbox');
+    checkboxes.forEach(cb => cb.checked = false);
+    
+    if (perms[type]) {
+        perms[type].forEach(name => {
+            const cb = document.querySelector(`input[name="${name}"]`);
+            if (cb) cb.checked = true;
+        });
+    }
+    updateBadges();
+}
+
+// Initial update
+document.addEventListener('DOMContentLoaded', updateBadges);
+</script>
 {% endblock %}

@@ -20,6 +20,7 @@ class User(AbstractUser):
         default=Role.DISTRIBUTOR,
     )
     phone = models.CharField(max_length=20, blank=True)
+    position = models.CharField(max_length=100, blank=True, help_text="e.g. Manager, Sales Executive")
 
     class Meta:
         ordering = ['username']
@@ -44,11 +45,17 @@ class User(AbstractUser):
     def is_distributor(self):
         return self.role == self.Role.DISTRIBUTOR
 
+    @property
+    def staff_id(self):
+        if self.role == self.Role.STAFF:
+            return f"STF-{self.id:03d}"
+        return None
+
 
 class StaffPermission(models.Model):
     """
     Granular, per-module access control for Staff users.
-    Each boolean controls whether the staff member can access that module.
+    Matches the Access Control Panel design with View/Create/Edit/Delete etc.
     """
 
     user = models.OneToOneField(
@@ -58,14 +65,51 @@ class StaffPermission(models.Model):
         limit_choices_to={'role': User.Role.STAFF},
     )
 
-    # Module-level access flags
-    can_manage_products = models.BooleanField(default=False)
-    can_manage_distributors = models.BooleanField(default=False)
-    can_manage_orders = models.BooleanField(default=False)
-    can_manage_invoices = models.BooleanField(default=False)
-    can_manage_announcements = models.BooleanField(default=False)
-    can_view_analytics = models.BooleanField(default=False)
-    can_manage_settings = models.BooleanField(default=False)
+    # Dashboard
+    dashboard_view = models.BooleanField(default=False)
+
+    # Distributors
+    distributors_view = models.BooleanField(default=False)
+    distributors_create = models.BooleanField(default=False)
+    distributors_edit = models.BooleanField(default=False)
+    distributors_delete = models.BooleanField(default=False)
+
+    # Products
+    products_view = models.BooleanField(default=False)
+    products_create = models.BooleanField(default=False)
+    products_edit = models.BooleanField(default=False)
+    products_delete = models.BooleanField(default=False)
+
+    # Orders
+    orders_view = models.BooleanField(default=False)
+    orders_create = models.BooleanField(default=False)
+    orders_edit = models.BooleanField(default=False)
+    orders_delete = models.BooleanField(default=False)
+    orders_approve = models.BooleanField(default=False)
+
+    # Invoices
+    invoices_view = models.BooleanField(default=False)
+    invoices_create = models.BooleanField(default=False)
+    invoices_edit = models.BooleanField(default=False)
+    invoices_delete = models.BooleanField(default=False)
+    invoices_download = models.BooleanField(default=False)
+
+    # Announcements
+    announcements_view = models.BooleanField(default=False)
+    announcements_create = models.BooleanField(default=False)
+    announcements_edit = models.BooleanField(default=False)
+    announcements_delete = models.BooleanField(default=False)
+
+    # Analytics
+    analytics_view = models.BooleanField(default=False)
+    analytics_export = models.BooleanField(default=False)
+
+    # Settings
+    settings_view = models.BooleanField(default=False)
+    settings_edit = models.BooleanField(default=False)
+
+    # Expiry
+    access_expiry = models.DateField(null=True, blank=True)
 
     class Meta:
         verbose_name = 'Staff Permission'
@@ -74,7 +118,11 @@ class StaffPermission(models.Model):
     def __str__(self):
         return f"Permissions → {self.user.username}"
 
-    def has_module_access(self, module: str) -> bool:
-        """Check access dynamically by module name string."""
-        return getattr(self, f'can_manage_{module}', False)
+    def active_permissions_count(self):
+        """Count how many permission flags are set to True."""
+        count = 0
+        for field in self._meta.fields:
+            if isinstance(field, models.BooleanField) and getattr(self, field.name):
+                count += 1
+        return count
 
