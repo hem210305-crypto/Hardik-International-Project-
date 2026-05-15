@@ -1,20 +1,350 @@
 {% extends "core/base_admin.html" %}
+{% load static %}
+
 {% block title %}Settings — Hardik International{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  
+  body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
+  
+  .card-figma {
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px;
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    margin-bottom: 24px;
+    padding: 24px;
+  }
+  
+  .card-title-figma {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  
+  .card-title-figma i {
+    color: #4b5563;
+    font-size: 1.25rem;
+    margin-right: 10px;
+  }
+
+  .form-label-figma {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #4b5563;
+    margin-bottom: 6px;
+  }
+
+  .form-control-figma {
+    background-color: #f3f4f6;
+    border: 1px solid #f3f4f6;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    color: #111827;
+    width: 100%;
+  }
+
+  .form-control-figma:focus {
+    outline: none;
+    border-color: #d1d5db;
+    background-color: #fff;
+  }
+
+  .btn-save-figma {
+    background-color: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .btn-save-figma:hover {
+    opacity: 0.9;
+    color: #fff;
+  }
+
+  .toggle-row {
+    background-color: #f9fafb;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .toggle-row:last-of-type {
+    margin-bottom: 24px;
+  }
+
+  .toggle-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #111827;
+    margin-bottom: 2px;
+  }
+
+  .toggle-desc {
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+
+  .template-box {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .template-box:last-child {
+    margin-bottom: 0;
+  }
+
+  .backup-box {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+
+  .backup-title {
+    color: #1e3a8a;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  .backup-date {
+    color: #2563eb;
+    font-size: 0.85rem;
+  }
+
+  .btn-outline-figma {
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    color: #374151;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-right: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-outline-figma:hover {
+    background-color: #f9fafb;
+    border-color: #d1d5db;
+  }
+
+  /* Custom Switch Toggle styling */
+  .form-switch .form-check-input {
+    width: 2.5em;
+    height: 1.25em;
+    cursor: pointer;
+  }
+  .form-switch .form-check-input:checked {
+    background-color: #10b981;
+    border-color: #10b981;
+  }
+</style>
+{% endblock %}
+
+{% block page_header %}{% endblock %}
+
 {% block content %}
-<div class="card">
-  <div class="card-header"><h3 class="card-title">Company Settings</h3></div>
-  <div class="card-body">
+<div class="container-xl py-4" style="background-color: #f8f9fa; min-height: 100vh; max-width: 900px; margin-left: 0;">
+  
+  <!-- Header Row -->
+  <div class="mb-4 pt-2">
+    <h1 class="fw-bold mb-1" style="font-size: 1.8rem; color: #111827;">Settings</h1>
+    <p class="text-muted mb-0" style="font-size: 0.95rem;">Manage system configuration and preferences</p>
+  </div>
+
+  <!-- General Settings -->
+  <div class="card-figma">
+    <div class="card-title-figma">
+      <i class="ti ti-settings"></i> General Settings
+    </div>
     <form method="post">
       {% csrf_token %}
-      <div class="row g-3">
-        <div class="col-md-6"><label class="form-label">Company Name</label><input type="text" name="company_name" class="form-control" value="{{ setting.company_name }}"></div>
-        <div class="col-md-6"><label class="form-label">Currency</label><input type="text" name="currency" class="form-control" value="{{ setting.currency }}"></div>
-        <div class="col-md-6"><label class="form-label">Support Email</label><input type="email" name="support_email" class="form-control" value="{{ setting.support_email }}"></div>
-        <div class="col-md-6"><label class="form-label">Support Phone</label><input type="text" name="support_phone" class="form-control" value="{{ setting.support_phone }}"></div>
-        <div class="col-12"><label class="form-label">Support Hours</label><input type="text" name="support_hours" class="form-control" value="{{ setting.support_hours }}"></div>
+      <input type="hidden" name="section" value="general">
+      <div class="row g-4 mb-4">
+        <div class="col-md-6">
+          <label class="form-label-figma">Company Name</label>
+          <input type="text" name="company_name" class="form-control-figma" value="{{ setting.company_name }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label-figma">Support Email</label>
+          <input type="email" name="support_email" class="form-control-figma" value="{{ setting.support_email }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label-figma">Support Phone</label>
+          <input type="text" name="support_phone" class="form-control-figma" value="{{ setting.support_phone }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label-figma">Default Currency</label>
+          <input type="text" name="currency" class="form-control-figma" value="{{ setting.currency }}">
+        </div>
       </div>
-      <div class="mt-4"><button type="submit" class="btn btn-primary">Save Settings</button></div>
+      <div>
+        <button type="submit" class="btn-save-figma">Save General Settings</button>
+      </div>
     </form>
   </div>
+
+  <!-- Notification Settings -->
+  <div class="card-figma">
+    <div class="card-title-figma">
+      <i class="ti ti-bell"></i> Notification Settings
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="section" value="notifications">
+      
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-title">Email Notifications</div>
+          <div class="toggle-desc">Receive email alerts for important events</div>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" name="email_notifications" id="notifEmail" {% if setting.email_notifications %}checked{% endif %}>
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-title">Order Notifications</div>
+          <div class="toggle-desc">Get notified when new orders are placed</div>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" name="order_notifications" id="notifOrder" {% if setting.order_notifications %}checked{% endif %}>
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-title">Low Stock Alerts</div>
+          <div class="toggle-desc">Alert when products are running low</div>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" name="low_stock_alerts" id="notifStock" {% if setting.low_stock_alerts %}checked{% endif %}>
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-title">Payment Reminders</div>
+          <div class="toggle-desc">Send reminders for pending payments</div>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" name="payment_reminders" id="notifPayment" {% if setting.payment_reminders %}checked{% endif %}>
+        </div>
+      </div>
+
+      <div>
+        <button type="submit" class="btn-save-figma">Save Notification Settings</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Security Settings -->
+  <div class="card-figma">
+    <div class="card-title-figma">
+      <i class="ti ti-shield"></i> Security Settings
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="section" value="security">
+      
+      <div class="mb-4">
+        <label class="form-label-figma">Session Timeout (minutes)</label>
+        <input type="number" name="session_timeout" class="form-control-figma" value="{{ setting.session_timeout_minutes }}">
+      </div>
+      
+      <div class="mb-4">
+        <label class="form-label-figma">Password Expiry (days)</label>
+        <input type="number" name="password_expiry" class="form-control-figma" value="{{ setting.password_expiry_days }}">
+      </div>
+
+      <div class="toggle-row mb-3">
+        <div>
+          <div class="toggle-title">Two-Factor Authentication</div>
+          <div class="toggle-desc">Require 2FA for admin login</div>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" name="two_factor_enabled" id="sec2FA" {% if setting.two_factor_enabled %}checked{% endif %}>
+        </div>
+      </div>
+
+      <div class="toggle-row mb-4">
+        <div>
+          <div class="toggle-title">Login Activity Logs</div>
+          <div class="toggle-desc">Track all login attempts</div>
+        </div>
+        <div class="form-check form-switch">
+          <!-- Visually toggled on to match image, but we don't save it -->
+          <input class="form-check-input" type="checkbox" id="secLogs" checked disabled>
+        </div>
+      </div>
+
+      <div>
+        <button type="submit" class="btn-save-figma">Save Security Settings</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Email Templates -->
+  <div class="card-figma">
+    <div class="card-title-figma">
+      <i class="ti ti-mail"></i> Email Templates
+    </div>
+    <div class="template-box">
+      <div class="toggle-title">Order Confirmation Email</div>
+      <div class="toggle-desc">Template sent when order is confirmed</div>
+    </div>
+    <div class="template-box">
+      <div class="toggle-title">Payment Reminder Email</div>
+      <div class="toggle-desc">Template for payment reminders</div>
+    </div>
+    <div class="template-box">
+      <div class="toggle-title">Welcome Email</div>
+      <div class="toggle-desc">Template for new distributor registration</div>
+    </div>
+  </div>
+
+  <!-- Backup & Data Management -->
+  <div class="card-figma">
+    <div class="card-title-figma">
+      <i class="ti ti-database"></i> Backup & Data Management
+    </div>
+    <div class="backup-box">
+      <div class="backup-title">Last Backup</div>
+      <div class="backup-date">January 31, 2024 at 02:00 AM</div>
+    </div>
+    <div class="d-flex flex-wrap">
+      <button class="btn-outline-figma mb-2">Create Backup Now</button>
+      <button class="btn-outline-figma mb-2">Download Backup</button>
+      <button class="btn-outline-figma mb-2">Restore from Backup</button>
+    </div>
+  </div>
+
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 {% endblock %}

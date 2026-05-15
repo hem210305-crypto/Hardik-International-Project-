@@ -1,93 +1,103 @@
 {% extends 'core/base_admin.html' %}
 {% load static %}
 
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+{% endblock %}
+
 {% block page_header %}{% endblock %}
 
 {% block content %}
 <div class="container-xl py-4" style="background-color: #f8f9fa; min-height: 100vh;">
-  <!-- Header -->
-  <div class="row align-items-center mb-4">
-    <div class="col">
-      <h1 class="fw-bold mb-1" style="font-size: 2rem; color: #1e293b;">Staff Management</h1>
-      <p class="text-muted mb-0" style="font-size: 1rem;">Manage staff accounts and access permissions</p>
+  <!-- Header Row -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="fw-bold mb-1" style="font-size: 2.25rem; color: #111827; letter-spacing: -0.02em;">Staff Management</h1>
+      <p class="text-muted mb-0" style="font-size: 1.1rem; font-weight: 400;">Manage staff accounts and access permissions</p>
     </div>
-    <div class="col-auto">
-      <button type="button" class="btn fw-bold px-4 py-2 text-white shadow-sm" 
-              style="background-color: #ff4d00; border: none; border-radius: 8px;"
+    <div>
+      <button type="button" class="btn fw-bold px-4 py-2 text-white shadow-sm d-flex align-items-center gap-2" 
+              style="background: linear-gradient(135deg, #ff6b00, #ff4d00); border: none; border-radius: 12px; height: 48px;"
               data-bs-toggle="modal" data-bs-target="#addStaffModal">
-        + Add New Staff
+        <i class="ti ti-plus fs-3"></i> Add New Staff
       </button>
     </div>
   </div>
 
-  <!-- Search -->
-  <div class="card border-0 shadow-sm rounded-3 mb-4">
-    <div class="card-body p-2 px-3">
-      <div class="d-flex align-items-center">
-        <i class="ti ti-search text-muted me-2 fs-3"></i>
-        <input type="text" class="form-control border-0 shadow-none bg-transparent" 
-               placeholder="Search by name, email, or ID..." style="font-size: 1rem;">
+  <!-- Search Bar -->
+  <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="border: 1px solid #e5e7eb !important;">
+    <div class="card-body p-0">
+      <div class="d-flex align-items-center px-4 py-3 bg-white">
+        <i class="ti ti-search text-muted me-3 fs-3" style="opacity: 0.6;"></i>
+        <input type="text" class="form-control border-0 shadow-none bg-transparent p-0" 
+               placeholder="Search by name, email, or ID..." 
+               style="font-size: 1.05rem; color: #1f2937; font-weight: 400;">
       </div>
     </div>
   </div>
 
-  <!-- Staff List -->
+  <!-- Staff Cards List -->
   <div class="staff-list mb-5">
     {% for staff in staff_members %}
     <div class="card border-0 shadow-sm rounded-4 mb-3 staff-card-figma">
       <div class="card-body p-4 d-flex align-items-start">
-        <!-- Avatar Column -->
-        <div class="me-4">
-          <div class="avatar-circle" style="background: {% cycle 'linear-gradient(135deg, #ff922b, #fd7e14)' 'linear-gradient(135deg, #748ffc, #4c6ef5)' 'linear-gradient(135deg, #ff8787, #fa5252)' %};">
-            {{ staff.first_name|first }}
+        <!-- Profile Section (Left) -->
+        <div class="me-4 d-flex align-items-center justify-content-center" style="width: 72px; height: 72px;">
+          <div class="avatar-circle-figma" style="background-color: #ff4d00;">
+            {{ staff.first_name|first|default:staff.username|first|upper }}
           </div>
         </div>
 
-        <!-- Info Column -->
+        <!-- Info Section (Middle) -->
         <div class="flex-grow-1 me-4">
           <div class="d-flex justify-content-between align-items-start mb-2">
             <div>
               <div class="d-flex align-items-center mb-1">
-                <span class="staff-name me-3">{{ staff.get_full_name }}</span>
-                <span class="status-pill active">Active</span>
+                <span class="staff-name-figma me-3">{{ staff.get_full_name }}</span>
+                {% if staff.is_active %}
+                <span class="badge-status-pill active">Active</span>
+                {% else %}
+                <span class="badge-status-pill inactive">Inactive</span>
+                {% endif %}
               </div>
-              <div class="staff-subinfo mb-1">{{ staff.position|default:"Manager" }} • {{ staff.staff_id|default:"STF-001" }}</div>
-              <div class="staff-email">
-                <i class="ti ti-mail me-1"></i> {{ staff.email }}
+              <div class="staff-subinfo-figma mb-0">{{ staff.position|default:"Manager" }} •</div>
+              <div class="staff-subinfo-figma mb-1">{{ staff.staff_id|default:"STF-001" }}</div>
+              <div class="staff-email-figma">
+                <i class="ti ti-mail me-2"></i> {{ staff.email }}
               </div>
             </div>
-            <div class="text-muted" style="font-size: 0.8rem; font-weight: 500;">
-              Last Login: {% if staff.last_login %}{{ staff.last_login|date:"Y-m-d H:i A" }}{% else %}2024-01-31 09:30 AM{% endif %}
+            <div class="text-end">
+              <div class="text-muted" style="font-size: 0.85rem; font-weight: 500;">
+                Last Login: <span class="text-dark">{% if staff.last_login %}{{ staff.last_login|date:"Y-m-d H:i A" }}{% else %}2024-01-31 09:30 AM{% endif %}</span>
+              </div>
             </div>
           </div>
 
-          <!-- Permission Badges Row -->
+          <!-- Dynamic Permission Modules -->
           <div class="d-flex flex-wrap gap-2 mt-3">
-            <span class="perm-badge">Dashboard</span>
-            <span class="perm-badge">Distributors</span>
-            <span class="perm-badge">Products</span>
-            <span class="perm-badge">Orders</span>
-            <span class="perm-badge">Invoices</span>
-            <span class="perm-badge">Announcements</span>
-            <span class="perm-badge">Analytics</span>
-            <span class="perm-badge">Settings</span>
+            {% for module in staff.staff_permissions.get_active_modules %}
+            <span class="module-badge-figma">{{ module }}</span>
+            {% empty %}
+            <span class="text-muted fs-8">No active permissions</span>
+            {% endfor %}
           </div>
         </div>
 
-        <!-- Actions Column -->
-        <div class="ps-4 border-start" style="min-width: 160px;">
+        <!-- Action Section (Right) -->
+        <div class="ps-4" style="min-width: 180px; border-left: 1px solid #f1f5f9;">
           <div class="d-flex flex-column gap-2">
-            <a href="{% url 'admin_staff_access' staff.id %}" class="btn btn-figma">
-              <i class="ti ti-shield-lock"></i> Manage Access
+            <a href="{% url 'admin_staff_access' staff.id %}" class="btn btn-action-figma">
+              <i class="ti ti-shield"></i> Manage Access
             </a>
-            <button class="btn btn-figma" onclick="editStaff('{{ staff.id }}', '{{ staff.get_full_name|escapejs }}', '{{ staff.email|escapejs }}', '{{ staff.position|escapejs }}')">
+            <button class="btn btn-action-figma" onclick="editStaff('{{ staff.id }}', '{{ staff.get_full_name|escapejs }}', '{{ staff.email|escapejs }}', '{{ staff.position|escapejs }}')">
               <i class="ti ti-edit"></i> Edit
             </button>
             <form method="post" class="m-0" onsubmit="return confirm('Remove this staff member?');">
               {% csrf_token %}
               <input type="hidden" name="action" value="delete">
               <input type="hidden" name="staff_id" value="{{ staff.id }}">
-              <button type="submit" class="btn btn-figma text-danger">
+              <button type="submit" class="btn btn-action-figma text-danger-figma">
                 <i class="ti ti-trash"></i> Remove
               </button>
             </form>
@@ -95,33 +105,47 @@
         </div>
       </div>
     </div>
+    {% empty %}
+    <div class="text-center py-5">
+      <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+        <i class="ti ti-users fs-1 text-muted"></i>
+      </div>
+      <h3 class="fw-bold">No Staff Members Yet</h3>
+      <p class="text-muted">Click "Add New Staff" to get started.</p>
+    </div>
     {% endfor %}
   </div>
 
-  <!-- Bottom Summary Stats -->
+  <!-- Summary Statistics Row -->
   <div class="row g-4 mb-5 mt-4">
-    <div class="col-md-3">
-      <div class="bg-white p-4 rounded-4 shadow-sm border-0 h-100">
-        <div class="text-muted fw-medium mb-2">Total Staff</div>
-        <div class="h1 fw-bold mb-0" style="font-size: 2.5rem; color: #1e293b;">{{ total_staff }}</div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-4 summary-card-figma">
+        <div class="card-body p-4">
+          <div class="text-muted fw-medium mb-2" style="font-size: 1.1rem;">Total Staff</div>
+          <div class="h1 fw-bold mb-0" style="font-size: 3rem; color: #111827;">{{ total_staff }}</div>
+        </div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="bg-white p-4 rounded-4 shadow-sm border-0 h-100">
-        <div class="text-muted fw-medium mb-2">Active Staff</div>
-        <div class="h1 fw-bold mb-0 text-success" style="font-size: 2.5rem;">{{ active_staff }}</div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-4 summary-card-figma">
+        <div class="card-body p-4">
+          <div class="text-muted fw-medium mb-2" style="font-size: 1.1rem;">Active Staff</div>
+          <div class="h1 fw-bold mb-0 text-success" style="font-size: 3rem;">{{ active_staff }}</div>
+        </div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="bg-white p-4 rounded-4 shadow-sm border-0 h-100">
-        <div class="text-muted fw-medium mb-2">Inactive Staff</div>
-        <div class="h1 fw-bold mb-0" style="font-size: 2.5rem; color: #1e293b;">{{ inactive_staff }}</div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-4 summary-card-figma">
+        <div class="card-body p-4">
+          <div class="text-muted fw-medium mb-2" style="font-size: 1.1rem;">Inactive Staff</div>
+          <div class="h1 fw-bold mb-0" style="font-size: 3rem; color: #111827;">{{ inactive_staff }}</div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Modal -->
+<!-- Add/Edit Modal -->
 <div class="modal modal-blur fade" id="addStaffModal" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
@@ -130,53 +154,61 @@
         <input type="hidden" name="action" id="formAction" value="add">
         <input type="hidden" name="staff_id" id="editStaffId" value="">
         
-        <div class="modal-header border-0 pb-0 pt-4 px-4">
+        <div class="modal-header border-0 pb-0 pt-4 px-4 bg-white">
           <div class="d-flex align-items-center">
-             <i class="ti ti-user-plus fs-2 text-muted me-2"></i>
-             <h5 class="modal-title fs-3 fw-bold mb-0" id="modalTitle">Add New Staff Member</h5>
+             <i class="ti ti-user fs-4 text-dark me-2"></i>
+             <h5 class="modal-title fs-5 fw-medium mb-0 text-dark" id="modalTitle">Add New Staff Member</h5>
           </div>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
 
         <div class="modal-body p-4">
           <div class="row g-4">
             <div class="col-md-6">
-              <label class="form-label fw-bold text-dark mb-1">Full Name *</label>
-              <input type="text" name="full_name" id="staffName" class="form-control figma-input" placeholder="Enter staff name" required>
+              <label class="form-label-figma">Full Name *</label>
+              <input type="text" name="full_name" id="staffName" class="form-control input-figma" placeholder="Enter staff name" required>
             </div>
             <div class="col-md-6">
-              <label class="form-label fw-bold text-dark mb-1">Role/Position *</label>
-              <input type="text" name="position" id="staffPosition" class="form-control figma-input" placeholder="e.g., Manager, Executive" required>
+              <label class="form-label-figma">Role/Position *</label>
+              <input type="text" name="position" id="staffPosition" class="form-control input-figma" placeholder="e.g., Manager, Executive" required>
             </div>
             <div class="col-12">
-              <label class="form-label fw-bold text-dark mb-1">Email Address *</label>
-              <input type="email" name="email" id="staffEmail" class="form-control figma-input" placeholder="staff@medsupply.com" required>
-            </div>
-            <div class="col-md-6 password-field">
-              <label class="form-label fw-bold text-dark mb-1">Password *</label>
-              <div class="input-group">
-                <input type="password" name="password" id="staffPassword" class="form-control figma-input" placeholder="Create password">
-                <button type="button" class="btn btn-light border" style="font-size: 0.85rem;" onclick="generatePassword()">Generate</button>
+              <label class="form-label-figma">Email Address *</label>
+              <div class="position-relative">
+                <i class="ti ti-mail position-absolute text-muted" style="left: 14px; top: 50%; transform: translateY(-50%);"></i>
+                <input type="email" name="email" id="staffEmail" class="form-control input-figma" placeholder="staff@medsupply.com" style="padding-left: 40px;" required>
               </div>
             </div>
             <div class="col-md-6 password-field">
-              <label class="form-label fw-bold text-dark mb-1">Confirm Password *</label>
-              <input type="password" class="form-control figma-input" placeholder="Re-enter password">
+              <label class="form-label-figma">Password *</label>
+              <div class="input-group position-relative">
+                <i class="ti ti-key position-absolute text-muted z-3" style="left: 14px; top: 50%; transform: translateY(-50%);"></i>
+                <input type="password" name="password" id="staffPassword" class="form-control input-figma position-relative z-1" placeholder="Create password" style="border-top-right-radius: 0; border-bottom-right-radius: 0; padding-left: 40px;">
+                <button type="button" class="btn btn-outline-secondary px-3 z-2" style="border: 1px solid #e2e8f0; border-left: none; border-radius: 0 10px 10px 0; background: #fff; font-weight: 500;" onclick="generatePassword()">Generate</button>
+              </div>
+            </div>
+            <div class="col-md-6 password-field">
+              <label class="form-label-figma">Confirm Password *</label>
+              <input type="password" class="form-control input-figma" placeholder="Re-enter password">
             </div>
           </div>
 
-          <div class="alert mt-4 mb-0 d-flex align-items-start p-3 rounded-3" style="background-color: #e7f5ff; color: #228be6; border: none;">
-            <i class="ti ti-mail-forward fs-3 me-3 mt-1"></i>
-            <div>
-              <strong class="d-block mb-1">Email Notification</strong>
-              <span class="fs-7" style="opacity: 0.85;">Login credentials will be automatically sent to the staff member's email address. They can change their password after first login.</span>
+          <div class="alert mt-4 mb-0 d-flex flex-column p-3 rounded-3" style="background-color: #f0f7ff; border: 1px solid #dbeafe;">
+            <div class="d-flex align-items-center mb-1">
+              <i class="ti ti-mail fs-5 me-2" style="color: #64748b;"></i>
+              <strong style="font-size: 0.9rem; color: #1e3a8a; font-weight: 500;">Email Notification</strong>
             </div>
+            <span style="font-size: 0.85rem; color: #2563eb; padding-left: 28px;">Login credentials will be automatically sent to the staff member's email address. They can change their password after first login.</span>
           </div>
         </div>
 
-        <div class="modal-footer border-0 pb-4 px-4">
-          <button type="submit" class="btn fw-bold px-4 py-2 text-white shadow-sm" id="submitBtn" style="background-color: #ff4d00; border: none; border-radius: 8px;">Add Staff Member</button>
-          <button type="button" class="btn btn-link text-muted fw-medium text-decoration-none" data-bs-dismiss="modal">Cancel</button>
+        <div class="modal-footer border-0 pb-4 px-4 bg-white d-flex justify-content-start gap-2">
+          <button type="submit" class="btn fw-medium px-4 text-white shadow-sm" id="submitBtn" 
+                  style="background: linear-gradient(135deg, #ff2a00, #e60000); border: none; border-radius: 8px; height: 42px; font-size: 0.95rem;">
+            Add Staff Member
+          </button>
+          <button type="button" class="btn btn-light px-4 border fw-medium text-dark rounded-2" 
+                  style="background: #fff; border-color: #e5e7eb; height: 42px; font-size: 0.95rem;" data-bs-dismiss="modal">Cancel</button>
         </div>
       </form>
     </div>
@@ -184,79 +216,85 @@
 </div>
 
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  
   body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
   
-  .staff-card-figma { transition: all 0.2s ease; border-radius: 16px !important; border: 1px solid transparent !important; }
-  .staff-card-figma:hover { box-shadow: 0 10px 30px rgba(0,0,0,0.08) !important; border-color: #e9ecef !important; }
+  .staff-card-figma { transition: transform 0.2s, box-shadow 0.2s; border: 1px solid #f1f5f9 !important; }
+  .staff-card-figma:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0,0,0,0.06) !important; border-color: #e2e8f0 !important; }
   
-  .avatar-circle {
-    width: 64px;
-    height: 64px;
+  .avatar-circle-figma {
+    width: 68px;
+    height: 68px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 1.6rem;
+    font-size: 1.85rem;
     font-weight: 700;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
   }
   
-  .staff-name { font-size: 1.25rem; font-weight: 700; color: #1e293b; }
+  .staff-name-figma { font-size: 1.4rem; font-weight: 700; color: #111827; }
   
-  .status-pill {
-    font-size: 0.7rem;
-    font-weight: 600;
-    padding: 2px 10px;
-    border-radius: 100px;
-    text-transform: capitalize;
-  }
-  .status-pill.active { background-color: #dcfce7; color: #15803d; }
-  
-  .staff-subinfo { font-size: 0.9rem; font-weight: 500; color: #64748b; }
-  .staff-email { font-size: 0.85rem; color: #64748b; }
-  
-  .perm-badge {
-    background-color: #e7f5ff;
-    color: #228be6;
+  .badge-status-pill {
     font-size: 0.75rem;
     font-weight: 600;
-    padding: 4px 12px;
-    border-radius: 4px;
-    border: 1px solid #d0ebff;
+    padding: 3px 12px;
+    border-radius: 100px;
+  }
+  .badge-status-pill.active { background-color: #dcfce7; color: #15803d; }
+  .badge-status-pill.inactive { background-color: #fee2e2; color: #dc2626; }
+  
+  .staff-subinfo-figma { font-size: 1rem; font-weight: 500; color: #4b5563; }
+  .staff-email-figma { font-size: 0.95rem; color: #6b7280; }
+  
+  .module-badge-figma {
+    background-color: #eff6ff;
+    color: #2563eb;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid #dbeafe;
   }
   
-  .btn-figma {
+  .btn-action-figma {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 16px;
-    font-size: 0.9rem;
+    justify-content: center;
+    gap: 12px;
+    padding: 10px 16px;
+    font-size: 0.95rem;
     font-weight: 600;
-    color: #334155;
-    border: 1px solid #e2e8f0;
+    color: #374151;
+    border: 1px solid #e5e7eb;
     background: #fff;
-    border-radius: 8px;
-    text-align: left;
-    transition: all 0.15s;
+    border-radius: 100px;
+    text-align: center;
+    transition: all 0.2s;
     text-decoration: none;
     width: 100%;
   }
-  .btn-figma:hover { background: #f1f5f9; color: #0f172a; border-color: #cbd5e1; }
-  .btn-figma i { font-size: 1.1rem; color: #94a3b8; }
-  .btn-figma.text-danger i { color: #ef4444; }
+  .btn-action-figma:hover { background: #f9fafb; color: #111827; border-color: #d1d5db; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+  .btn-action-figma i { font-size: 1.2rem; color: #9ca3af; }
+  .btn-action-figma.text-danger-figma { color: #dc2626; }
+  .btn-action-figma.text-danger-figma i { color: #dc2626; }
   
-  .figma-input {
-    background-color: #f1f5f9;
-    border: 1px solid #e2e8f0;
-    padding: 12px 16px;
-    font-size: 0.95rem;
+  .form-label-figma { font-weight: 600; color: #374151; margin-bottom: 8px; font-size: 0.95rem; }
+  .input-figma {
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    padding: 14px 18px;
+    font-size: 1rem;
     border-radius: 10px;
-    color: #1e293b;
+    color: #111827;
+    transition: all 0.2s;
   }
-  .figma-input:focus { background-color: #fff; border-color: #ff4d00; box-shadow: 0 0 0 4px rgba(255, 77, 0, 0.1); }
+  .input-figma:focus { background-color: #fff; border-color: #ff4d00; box-shadow: 0 0 0 4px rgba(255, 77, 0, 0.1); outline: none; }
   
-  .fs-7 { font-size: 0.85rem; }
+  .summary-card-figma { border: 1px solid #e5e7eb !important; border-radius: 12px !important; }
 </style>
 
 <script>
@@ -291,3 +329,8 @@ document.getElementById('addStaffModal').addEventListener('hidden.bs.modal', fun
 });
 </script>
 {% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}
+}

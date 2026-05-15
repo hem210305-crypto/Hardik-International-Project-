@@ -126,3 +126,26 @@ class StaffPermission(models.Model):
                 count += 1
         return count
 
+    def get_active_modules(self):
+        """Return a list of module names that have at least one permission active."""
+        modules = []
+        mapping = {
+            'dashboard': 'Dashboard',
+            'distributors': 'Distributors',
+            'products': 'Products',
+            'orders': 'Orders',
+            'invoices': 'Invoices',
+            'announcements': 'Announcements',
+            'analytics': 'Analytics',
+            'settings': 'Settings',
+        }
+        for prefix, name in mapping.items():
+            # Check if any field starting with prefix is True
+            is_active = any(
+                getattr(self, f.name) for f in self._meta.fields 
+                if f.name.startswith(f"{prefix}_") and isinstance(f, models.BooleanField)
+            )
+            if is_active:
+                modules.append(name)
+        return modules
+

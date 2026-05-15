@@ -1,27 +1,430 @@
 {% extends "core/base_admin.html" %}
-{% block title %}Invoices — Hardik International{% endblock %}
+{% load static %}
+
+{% block title %}Invoices Management — Hardik International{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  
+  body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
+  
+  .metric-card-figma {
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px;
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    padding: 20px;
+  }
+  
+  .metric-title { font-size: 0.85rem; font-weight: 500; color: #6b7280; margin-bottom: 8px; }
+  .metric-value { font-size: 1.75rem; font-weight: 700; color: #111827; letter-spacing: -0.02em; }
+  
+  .table-card-figma {
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px;
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    overflow: hidden;
+  }
+
+  .table-header-custom {
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 16px 24px;
+  }
+
+  .table-custom {
+    margin-bottom: 0;
+  }
+
+  .table-custom th {
+    background-color: #f9fafb;
+    color: #6b7280;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 12px 24px;
+    border-bottom: 1px solid #e5e7eb;
+    border-top: none;
+  }
+
+  .table-custom td {
+    padding: 16px 24px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 0.9rem;
+    color: #111827;
+  }
+
+  .table-custom tr:last-child td {
+    border-bottom: none;
+  }
+
+  .table-custom tbody tr {
+    transition: background-color 0.15s;
+  }
+  
+  .table-custom tbody tr:hover {
+    background-color: #f8fafc;
+  }
+
+  .inv-number {
+    font-weight: 600;
+    color: #2563eb;
+    text-decoration: none;
+  }
+  
+  .inv-number:hover {
+    text-decoration: underline;
+  }
+
+  .dist-name {
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 2px;
+  }
+
+  .dist-meta {
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+
+  .amount-val {
+    font-weight: 700;
+    font-family: 'Inter', monospace;
+  }
+
+  .badge-status {
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  .bg-paid { background-color: #dcfce7; color: #16a34a; }
+  .bg-unpaid { background-color: #f3f4f6; color: #4b5563; }
+  .bg-overdue { background-color: #fee2e2; color: #dc2626; }
+  .bg-partial { background-color: #fef3c7; color: #d97706; }
+
+  .btn-action-light {
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    color: #374151;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  
+  .btn-action-light:hover {
+    background-color: #f9fafb;
+    border-color: #d1d5db;
+  }
+
+  .btn-primary-custom {
+    background-color: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+  }
+  
+  .btn-primary-custom:hover {
+    background-color: #1d4ed8;
+  }
+
+  .search-input {
+    background-color: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px 16px 8px 36px;
+    font-size: 0.9rem;
+    width: 300px;
+  }
+  
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+  }
+</style>
+{% endblock %}
+
+{% block page_header %}{% endblock %}
+
 {% block content %}
-<div class="card">
-  <div class="card-header"><h3 class="card-title">All Invoices</h3></div>
-  <div class="table-responsive">
-    <table class="table table-vcenter card-table">
-      <thead><tr><th>Invoice No.</th><th>Distributor</th><th>Order</th><th>Invoice Date</th><th>Due Date</th><th>Amount</th><th>Status</th></tr></thead>
-      <tbody>
-        {% for inv in invoices %}
-          <tr>
-            <td>{{ inv.invoice_number }}</td>
-            <td>{{ inv.distributor.business_name }}</td>
-            <td>{{ inv.order.order_id|default:"—" }}</td>
-            <td>{{ inv.invoice_date }}</td>
-            <td>{{ inv.due_date }}</td>
-            <td>₹{{ inv.amount }}</td>
-            <td><span class="badge bg-{% if inv.status == 'paid' %}success{% elif inv.status == 'overdue' %}danger{% elif inv.status == 'partial' %}warning{% else %}secondary{% endif %}">{{ inv.get_status_display }}</span></td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="7" class="text-center text-muted">No invoices yet.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+<div class="container-xl py-4" style="background-color: #f8f9fa; min-height: 100vh;">
+  
+  <!-- Header Row -->
+  <div class="d-flex justify-content-between align-items-center mb-4 pt-2">
+    <div>
+      <h1 class="fw-bold mb-1" style="font-size: 1.8rem; color: #111827;">Invoices & Billing</h1>
+      <p class="text-muted mb-0" style="font-size: 0.95rem;">Track invoice status across all distributors and monitor collections.</p>
+    </div>
+    <div>
+      <button class="btn-primary-custom d-flex align-items-center gap-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#createInvoiceModal">
+        <i class="ti ti-plus"></i> Create Invoice
+      </button>
+    </div>
   </div>
+
+  <!-- Metric Cards -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-3">
+      <div class="metric-card-figma">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div class="metric-title">Total Invoices</div>
+          <div class="bg-blue-lt text-primary p-2 rounded-3"><i class="ti ti-file-invoice fs-4"></i></div>
+        </div>
+        <div class="metric-value">{{ totals.count }}</div>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="metric-card-figma">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div class="metric-title">Total Invoiced Amount</div>
+          <div class="bg-indigo-lt text-indigo p-2 rounded-3"><i class="ti ti-receipt-2 fs-4"></i></div>
+        </div>
+        <div class="metric-value amount-val">₹{{ totals.total_amount|floatformat:"0" }}</div>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="metric-card-figma border-bottom border-success border-3">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div class="metric-title">Amount Collected</div>
+          <div class="bg-green-lt text-success p-2 rounded-3"><i class="ti ti-cash fs-4"></i></div>
+        </div>
+        <div class="metric-value text-success amount-val">₹{{ totals.paid_amount|floatformat:"0" }}</div>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="metric-card-figma border-bottom border-danger border-3">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div class="metric-title">Overdue Amount</div>
+          <div class="bg-red-lt text-danger p-2 rounded-3"><i class="ti ti-alert-triangle fs-4"></i></div>
+        </div>
+        <div class="metric-value text-danger amount-val">₹{{ totals.overdue_amount|floatformat:"0" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoices Table Card -->
+  <div class="table-card-figma">
+    <!-- Filters & Search -->
+    <div class="table-header-custom d-flex justify-content-between align-items-center">
+      <div class="position-relative">
+        <i class="ti ti-search search-icon"></i>
+        <input type="text" class="search-input" placeholder="Search invoice, distributor...">
+      </div>
+      <div class="d-flex gap-2">
+        <select class="form-select border-0 bg-light" style="font-size: 0.85rem; width: 140px;">
+          <option value="">All Status</option>
+          <option value="paid">Paid</option>
+          <option value="unpaid">Unpaid</option>
+          <option value="overdue">Overdue</option>
+        </select>
+        <button class="btn btn-outline-secondary border-0 bg-light shadow-none">
+          <i class="ti ti-filter"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive">
+      <table class="table table-custom">
+        <thead>
+          <tr>
+            <th>Invoice details</th>
+            <th>Distributor</th>
+            <th>Issue Date</th>
+            <th>Due Date</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inv in invoices %}
+          <tr>
+            <td>
+              <div><a href="#" class="inv-number">{{ inv.invoice_number }}</a></div>
+              <div class="dist-meta mt-1"><i class="ti ti-shopping-cart text-muted"></i> {{ inv.order.order_id|default:"Manual Invoice" }}</div>
+            </td>
+            <td>
+              <div class="dist-name">{{ inv.distributor.business_name }}</div>
+              <div class="dist-meta">{{ inv.distributor.code }}</div>
+            </td>
+            <td class="text-muted">{{ inv.invoice_date|date:"d M, Y" }}</td>
+            <td>
+              <span class="{% if inv.status == 'overdue' %}text-danger fw-bold{% else %}text-muted{% endif %}">
+                {{ inv.due_date|date:"d M, Y" }}
+              </span>
+            </td>
+            <td class="amount-val">₹{{ inv.amount|floatformat:"0" }}</td>
+            <td>
+              {% if inv.status == 'paid' %}
+                <span class="badge-status bg-paid"><i class="ti ti-check"></i> Paid</span>
+              {% elif inv.status == 'overdue' %}
+                <span class="badge-status bg-overdue"><i class="ti ti-alert-circle"></i> Overdue</span>
+              {% elif inv.status == 'partial' %}
+                <span class="badge-status bg-partial"><i class="ti ti-clock"></i> Partial</span>
+              {% else %}
+                <span class="badge-status bg-unpaid"><i class="ti ti-circle"></i> Unpaid</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <button class="btn-action-light me-1" title="Download PDF"><i class="ti ti-download text-muted"></i></button>
+              <button class="btn-action-light" title="View Details">Details</button>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5">
+              <div class="text-muted mb-2"><i class="ti ti-receipt-2 fs-1"></i></div>
+              <h5 class="fw-bold text-dark">No Invoices Found</h5>
+              <p class="text-muted mb-0">Create your first invoice to get started.</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- Pagination Footer -->
+    <div class="table-header-custom border-bottom-0 border-top d-flex justify-content-between align-items-center">
+      <span class="text-muted" style="font-size: 0.85rem;">Showing {{ invoices|length }} entries</span>
+      <nav aria-label="Page navigation">
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+          <li class="page-item active"><a class="page-link" href="#">1</a></li>
+          <li class="page-item"><a class="page-link" href="#">Next</a></li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Create Invoice Modal -->
+  <div class="modal fade" id="createInvoiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+        <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+          <div class="d-flex align-items-center">
+            <div class="bg-blue-lt text-primary rounded p-2 me-3 d-flex align-items-center justify-content-center">
+              <i class="ti ti-file-invoice fs-2"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold mb-0">Create New Invoice</h5>
+              <div class="text-muted" style="font-size: 0.85rem;">Fill in the details to generate an invoice.</div>
+            </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form method="post" id="createInvoiceForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create">
+            
+            <div class="row g-4">
+              <div class="col-md-6">
+                <label class="form-label" style="font-size: 0.85rem; color: #4b5563; font-weight: 500;">Invoice Number <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="invoice_number" value="{{ suggested_inv_no }}" required style="background-color: #f3f4f6; border: 1px solid #f3f4f6; border-radius: 8px;">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" style="font-size: 0.85rem; color: #4b5563; font-weight: 500;">Amount (₹) <span class="text-danger">*</span></label>
+                <input type="number" step="0.01" class="form-control" name="amount" required style="background-color: #f3f4f6; border: 1px solid #f3f4f6; border-radius: 8px;">
+              </div>
+              
+              <div class="col-md-6">
+                <label class="form-label" style="font-size: 0.85rem; color: #4b5563; font-weight: 500;">Distributor <span class="text-danger">*</span></label>
+                <select class="form-select" name="distributor_id" required style="background-color: #f3f4f6; border: 1px solid #f3f4f6; border-radius: 8px;">
+                  <option value="">Select Distributor</option>
+                  {% for d in distributors %}
+                    <option value="{{ d.id }}">{{ d.business_name }} ({{ d.code }})</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" style="font-size: 0.85rem; color: #4b5563; font-weight: 500;">Linked Order (Optional)</label>
+                <select class="form-select" name="order_id" style="background-color: #f3f4f6; border: 1px solid #f3f4f6; border-radius: 8px;">
+                  <option value="">Select Order (if applicable)</option>
+                  {% for o in orders %}
+                    <option value="{{ o.id }}">{{ o.order_id }} - ₹{{ o.total_amount }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" style="font-size: 0.85rem; color: #4b5563; font-weight: 500;">Invoice Date <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" name="invoice_date" value="{% now 'Y-m-d' %}" required style="background-color: #f3f4f6; border: 1px solid #f3f4f6; border-radius: 8px;">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" style="font-size: 0.85rem; color: #4b5563; font-weight: 500;">Due Date <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" name="due_date" required style="background-color: #f3f4f6; border: 1px solid #f3f4f6; border-radius: 8px;">
+              </div>
+
+              <div class="col-md-12">
+                <label class="form-label" style="font-size: 0.85rem; color: #4b5563; font-weight: 500;">Status <span class="text-danger">*</span></label>
+                <select class="form-select" name="status" required style="background-color: #f3f4f6; border: 1px solid #f3f4f6; border-radius: 8px;">
+                  <option value="unpaid">Unpaid</option>
+                  <option value="paid">Paid</option>
+                  <option value="partial">Partial</option>
+                  <option value="overdue">Overdue</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+              <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal" style="border-radius: 8px; font-weight: 500;">Cancel</button>
+              <button type="submit" class="btn-primary-custom px-4" style="border-radius: 8px; font-weight: 500;">Create Invoice</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Add comma formatting to amounts
+  document.addEventListener("DOMContentLoaded", function () {
+    const formatIndianRupee = (num) => {
+      let x = num.toString();
+      let lastThree = x.substring(x.length - 3);
+      let otherNumbers = x.substring(0, x.length - 3);
+      if (otherNumbers != '') lastThree = ',' + lastThree;
+      return otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + lastThree;
+    };
+
+    document.querySelectorAll('.amount-val').forEach(el => {
+      let text = el.innerText.trim();
+      if (text.startsWith('₹')) {
+        let numStr = text.substring(1).replace(/,/g, '');
+        let num = parseInt(numStr);
+        if (!isNaN(num)) {
+          el.innerText = '₹' + formatIndianRupee(num);
+        }
+      }
+    });
+  });
+</script>
 {% endblock %}

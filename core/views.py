@@ -621,10 +621,71 @@ def admin_orders(request):
 
 @role_required('admin')
 def admin_invoices(request):
-    invoices = Invoice.objects.select_related('distributor', 'order').all()
+    from django.db.models import Sum
+    from django.db.models.functions import Coalesce
+    from decimal import Decimal
+    import datetime
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'create':
+            distributor_id = request.POST.get('distributor_id')
+            order_id = request.POST.get('order_id')
+            invoice_number = request.POST.get('invoice_number', '').strip()
+            invoice_date = request.POST.get('invoice_date')
+            due_date = request.POST.get('due_date')
+            amount = request.POST.get('amount', '0').strip()
+            status = request.POST.get('status', Invoice.Status.UNPAID)
+            
+            try:
+                distributor = Distributor.objects.get(id=distributor_id)
+                order = Order.objects.get(id=order_id) if order_id else None
+                
+                Invoice.objects.create(
+                    invoice_number=invoice_number,
+                    distributor=distributor,
+                    order=order,
+                    invoice_date=invoice_date,
+                    due_date=due_date,
+                    amount=Decimal(amount or '0'),
+                    status=status
+                )
+                messages.success(request, f'Invoice {invoice_number} created successfully.')
+            except Exception as e:
+                messages.error(request, f'Error creating invoice: {str(e)}')
+                
+            return redirect('admin_invoices')
+            
+    invoices = Invoice.objects.select_related('distributor', 'order').all().order_by('-invoice_date')
+    distributors = Distributor.objects.filter(status=Distributor.Status.ACTIVE).order_by('business_name')
+    orders = Order.objects.all().order_by('-id')[:50] # Getting recent 50 orders for the dropdown
+    
+    total_amount = invoices.aggregate(total=Coalesce(Sum('amount'), Decimal('0')))['total']
+    paid_amount = invoices.filter(status=Invoice.Status.PAID).aggregate(total=Coalesce(Sum('amount'), Decimal('0')))['total']
+    overdue_amount = invoices.filter(status=Invoice.Status.OVERDUE).aggregate(total=Coalesce(Sum('amount'), Decimal('0')))['total']
+    unpaid_amount = invoices.filter(status=Invoice.Status.UNPAID).aggregate(total=Coalesce(Sum('amount'), Decimal('0')))['total']
+    
+    totals = {
+        'total_amount': total_amount,
+        'paid_amount': paid_amount,
+        'overdue_amount': overdue_amount,
+        'unpaid_amount': unpaid_amount,
+        'count': invoices.count(),
+        'overdue_count': invoices.filter(status=Invoice.Status.OVERDUE).count()
+    }
+    
+    # Auto-generate a default invoice number suggestion
+    today_str = datetime.date.today().strftime('%Y%m%d')
+    count_today = Invoice.objects.filter(invoice_date=datetime.date.today()).count() + 1
+    suggested_inv_no = f"INV-{today_str}-{count_today:03d}"
+    
     ctx = admin_ctx(
-        request, 'invoices', 'Invoices', 'Track invoice status across all distributors.',
+        request, 'invoices', 'Invoices Management', 'Track invoice status across all distributors and monitor collections.',
         invoices=invoices,
+        distributors=distributors,
+        orders=orders,
+        totals=totals,
+        suggested_inv_no=suggested_inv_no,
     )
     return render(request, 'core/admin_invoices.html', ctx)
 
@@ -995,8 +1056,98 @@ def admin_staff_access(request, pk):
 
 @role_required('admin')
 def admin_analytics(request):
+    from django.db.models.functions import Coalesce
+    from decimal import Decimal
+    import datetime
+
+    today = datetime.date.today()
+    first_day_current_month = today.replace(day=1)
+    last_day_prev_month = first_day_current_month - datetime.timedelta(days=1)
+    first_day_last_month = last_day_prev_month.replace(day=1)
+
+    def get_trend_details(trend_num):
+        if trend_num >= 0:
+            return f"+{trend_num:.1f}%", 'trend-up', 'ti-trending-up'
+        else:
+            return f"{trend_num:.1f}%", 'trend-down', 'ti-trending-down'
+
+    def format_currency(num):
+        if num >= 10000000:
+            return f"{num / Decimal('10000000'):.1f}Cr"
+        elif num >= 100000:
+            return f"{num / Decimal('100000'):.1f}L"
+        return f"{num:,.0f}"
+
+    # Revenue
+    total_rev = Order.objects.aggregate(total=Coalesce(Sum('total_amount'), Decimal('0')))['total']
+    curr_rev = Order.objects.filter(order_date__gte=first_day_current_month).aggregate(total=Coalesce(Sum('total_amount'), Decimal('0')))['total']
+    prev_rev = Order.objects.filter(order_date__gte=first_day_last_month, order_date__lt=first_day_current_month).aggregate(total=Coalesce(Sum('total_amount'), Decimal('0')))['total']
+    rev_trend_num = ((curr_rev - prev_rev) / prev_rev * 100) if prev_rev > 0 else 0
+    rev_trend_str, rev_trend_cls, rev_trend_icon = get_trend_details(rev_trend_num)
+
+    # Orders
+    total_ord = Order.objects.count()
+    curr_ord = Order.objects.filter(order_date__gte=first_day_current_month).count()
+    prev_ord = Order.objects.filter(order_date__gte=first_day_last_month, order_date__lt=first_day_current_month).count()
+    ord_trend_num = ((curr_ord - prev_ord) / prev_ord * 100) if prev_ord > 0 else 0
+    ord_trend_str, ord_trend_cls, ord_trend_icon = get_trend_details(ord_trend_num)
+
+    # Distributors
+    active_dist = Distributor.objects.filter(status=Distributor.Status.ACTIVE).count()
+    curr_dist = Distributor.objects.filter(status=Distributor.Status.ACTIVE, joined_on__gte=first_day_current_month).count()
+    prev_dist = Distributor.objects.filter(status=Distributor.Status.ACTIVE, joined_on__gte=first_day_last_month, joined_on__lt=first_day_current_month).count()
+    dist_trend_num = ((curr_dist - prev_dist) / prev_dist * 100) if prev_dist > 0 else 0
+    dist_trend_str, dist_trend_cls, dist_trend_icon = get_trend_details(dist_trend_num)
+
+    # Products Sold
+    total_prod = OrderItem.objects.aggregate(total=Coalesce(Sum('quantity'), 0))['total']
+    curr_prod = OrderItem.objects.filter(order__order_date__gte=first_day_current_month).aggregate(total=Coalesce(Sum('quantity'), 0))['total']
+    prev_prod = OrderItem.objects.filter(order__order_date__gte=first_day_last_month, order__order_date__lt=first_day_current_month).aggregate(total=Coalesce(Sum('quantity'), 0))['total']
+    prod_trend_num = ((curr_prod - prev_prod) / prev_prod * 100) if prev_prod > 0 else 0
+    prod_trend_str, prod_trend_cls, prod_trend_icon = get_trend_details(prod_trend_num)
+
+    # Top Distributors
+    top_dist_qs = Distributor.objects.annotate(revenue=Coalesce(Sum('orders__total_amount'), Decimal('0'))).order_by('-revenue')[:5]
+    top_distributors = [
+        {'rank': idx, 'name': d.business_name, 'amount': format_currency(d.revenue)}
+        for idx, d in enumerate(top_dist_qs, 1)
+    ]
+
+    # Top Categories
+    top_cat_qs = ProductCategory.objects.annotate(sold=Coalesce(Sum('products__order_items__quantity'), 0)).order_by('-sold')[:5]
+    top_categories = [
+        {'rank': idx, 'name': c.name}
+        for idx, c in enumerate(top_cat_qs, 1)
+    ]
+
+    context_data = {
+        'total_revenue': format_currency(total_rev),
+        'revenue_trend': rev_trend_str,
+        'revenue_trend_cls': rev_trend_cls,
+        'revenue_trend_icon': rev_trend_icon,
+        
+        'total_orders': f"{total_ord:,}",
+        'orders_trend': ord_trend_str,
+        'orders_trend_cls': ord_trend_cls,
+        'orders_trend_icon': ord_trend_icon,
+        
+        'active_distributors': active_dist,
+        'distributors_trend': dist_trend_str,
+        'distributors_trend_cls': dist_trend_cls,
+        'distributors_trend_icon': dist_trend_icon,
+        
+        'products_sold': f"{total_prod:,}",
+        'products_trend': prod_trend_str,
+        'products_trend_cls': prod_trend_cls,
+        'products_trend_icon': prod_trend_icon,
+        
+        'top_distributors': top_distributors,
+        'top_categories': top_categories,
+    }
+    
     ctx = admin_ctx(
-        request, 'analytics', 'Analytics & Reports', 'Revenue trends and order insights.',
+        request, 'analytics', 'Analytics & Reports', 'Comprehensive business insights and metrics',
+        **context_data
     )
     return render(request, 'core/admin_analytics.html', ctx)
 
@@ -1005,15 +1156,39 @@ def admin_analytics(request):
 def admin_settings(request):
     setting = get_company_settings()
     if request.method == 'POST':
-        for field in ('company_name', 'support_email', 'support_phone', 'support_hours', 'currency'):
-            value = request.POST.get(field, '').strip()
-            if value:
-                setattr(setting, field, value)
-        setting.save()
-        messages.success(request, 'Settings saved.')
+        section = request.POST.get('section', '')
+        
+        if section == 'general':
+            setting.company_name = request.POST.get('company_name', setting.company_name).strip()
+            setting.support_email = request.POST.get('support_email', setting.support_email).strip()
+            setting.support_phone = request.POST.get('support_phone', setting.support_phone).strip()
+            setting.currency = request.POST.get('currency', setting.currency).strip()
+            setting.save()
+            messages.success(request, 'General settings saved successfully.')
+            
+        elif section == 'notifications':
+            setting.email_notifications = 'email_notifications' in request.POST
+            setting.order_notifications = 'order_notifications' in request.POST
+            setting.low_stock_alerts = 'low_stock_alerts' in request.POST
+            setting.payment_reminders = 'payment_reminders' in request.POST
+            setting.save()
+            messages.success(request, 'Notification preferences updated.')
+            
+        elif section == 'security':
+            try:
+                setting.session_timeout_minutes = int(request.POST.get('session_timeout', setting.session_timeout_minutes))
+                setting.password_expiry_days = int(request.POST.get('password_expiry', setting.password_expiry_days))
+            except ValueError:
+                pass
+            setting.two_factor_enabled = 'two_factor_enabled' in request.POST
+            # login_activity_logs is currently not in the model but we simulate its save if needed
+            setting.save()
+            messages.success(request, 'Security settings updated.')
+            
         return redirect('admin_settings')
+
     ctx = admin_ctx(
-        request, 'settings', 'System Settings', 'Manage company-wide configuration.',
+        request, 'settings', 'Settings', 'Manage system configuration and preferences',
         setting=setting,
     )
     return render(request, 'core/admin_settings.html', ctx)
