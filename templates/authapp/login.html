@@ -8,65 +8,254 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f0f6ff; /* Soft light blue page background exactly like Figma */
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      overflow-x: hidden;
+    }
+
+    /* Double Box Side-by-Side Dynamic Container */
+    .login-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px; /* Space between the two boxes */
+      width: 100%;
+      max-width: 96vw; /* Fills 96% of the screen width for maximum space utilization */
+      margin: 0 auto;
+    }
+
+    /* Left Box - Soft Blue Visual Box (Expands dynamically to occupy all remaining space) */
+    .login-visual {
+      flex: 1; /* Automatically grows to take all leftover width */
+      height: 660px;
+      background: linear-gradient(135deg, #cbe2ff, #e7f2ff, #cbe2ff);
+      border-radius: 28px;
+      box-shadow: 0 16px 48px rgba(0, 82, 165, 0.04);
+    }
+
+    /* Right Box - White Card Box (Fixed width on the right, keeping space at the end) */
+    .login-form-container {
+      width: 480px; /* Fixed premium card width */
+      flex-shrink: 0; /* Prevents the box from shrinking, maintaining its clean proportion */
+      height: 660px;
+      padding: 56px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: #ffffff;
+      border-radius: 28px;
+      box-shadow: 0 16px 48px rgba(0, 82, 165, 0.08); /* Premium shadows */
+    }
+
+    .form-inner {
+      width: 100%;
+    }
+
+    /* Alert styles */
+    .alert-restricted {
+      background-color: #fee2e2;
+      border: 1px solid #fca5a5;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #b91c1c;
+      font-weight: 500;
+      margin-bottom: 20px;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .form-group {
+      margin-bottom: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    .form-control-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .form-icon {
+      position: absolute;
+      left: 16px;
+      color: #94a3b8;
+      font-size: 17px;
+      pointer-events: none;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 14px 16px 14px 46px;
+      background-color: #f1f5f9;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      font-size: 14px;
+      color: #1e293b;
+      outline: none;
+      transition: all 0.2s ease;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .form-control::placeholder {
+      color: #94a3b8;
+    }
+
+    .form-control:focus {
+      background-color: #ffffff;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 16px;
+      background-color: #2563eb;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+      font-family: 'Inter', sans-serif;
+      margin-top: 6px;
+    }
+
+    .btn-login:hover {
+      background-color: #1d4ed8;
+      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-login:active {
+      transform: scale(0.98);
+    }
+
+    /* Responsive behaviors */
+    @media (max-width: 850px) {
+      body {
+        padding: 16px;
+        background-color: #f0f6ff;
+      }
+      .login-container {
+        gap: 0;
+        max-width: 460px;
+      }
+      .login-visual {
+        display: none;
+      }
+      .login-form-container {
+        width: 100%;
+        height: auto;
+        padding: 40px 24px;
+      }
+    }
+  </style>
 </head>
 <body>
-<div class="login-page">
-  <div class="login-box">
 
-    <!-- Logo -->
-    <div class="login-logo">
-      <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:6px;">
-        <div style="width:60px;height:60px;background:#0052a5;border-radius:10px;display:flex;align-items:center;justify-content:center;">
-          <span style="font-size:28px;font-weight:900;color:#fff;">H</span>
+<div class="login-container">
+  <!-- Left Side: Visual (Separate rounded box expanding to all remaining space) -->
+  <div class="login-visual"></div>
+
+  <!-- Right Side: Login Card Box (Fixed width on the right, keeping space at the end) -->
+  <div class="login-form-container">
+    <div class="form-inner">
+      
+      <!-- Branding Header -->
+      <div class="logo-container" style="display: flex; flex-direction: column; align-items: center; margin-bottom: 32px;">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 8px;">
+          <div style="width: 54px; height: 54px; background: #0052a5; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0, 82, 165, 0.15);">
+            <svg width="34" height="34" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="24" cy="24" r="20" stroke="white" stroke-width="2.5" stroke-dasharray="5 2.5"/>
+              <path d="M16 14V34M32 14V34M16 24H32" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div style="text-align: left;">
+            <h2 style="font-size: 24px; font-weight: 800; color: #0052a5; letter-spacing: 0.5px; text-transform: uppercase; margin: 0; line-height: 1;">HARDIK</h2>
+            <div style="font-size: 11.5px; font-weight: 600; color: #0052a5; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px;">INTERNATIONAL PVT. LTD.</div>
+          </div>
         </div>
-        <div style="text-align:left;">
-          <div style="font-size:16px;font-weight:900;color:#0052a5;letter-spacing:0.5px;text-transform:uppercase;line-height:1.1;">HARDIK</div>
-          <div style="font-size:10px;font-weight:600;color:#0052a5;letter-spacing:1px;text-transform:uppercase;">INTERNATIONAL PVT. LTD.</div>
+        <div style="font-family: 'Dancing Script', cursive; font-size: 20px; color: #475569; text-align: center; margin-bottom: 6px;">
+          House of Ortho Tools
         </div>
-      </div>
-      <div style="font-family:'Dancing Script',cursive;font-size:17px;color:#555;text-align:center;margin-top:2px;">
-        House of Ortho Tools
-      </div>
-    </div>
-
-    <div class="login-portal-title">Distributor Portal</div>
-    <div class="login-portal-sub">Hardik International · Distributor Access</div>
-
-    {% if messages %}
-      {% for message in messages %}
-        <div class="alert-restricted" style="margin-top:12px;">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
-
-    <form method="post" style="margin-top:20px;">
-      {% csrf_token %}
-      <div class="form-group">
-        <label class="form-label">Username</label>
-        <div class="form-control-wrap">
-          <span class="form-icon"><i class="fa-regular fa-user"></i></span>
-          <input type="text" name="username" class="form-control" placeholder="Enter your username" required autofocus>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Password</label>
-        <div class="form-control-wrap">
-          <span class="form-icon"><i class="fa-solid fa-lock"></i></span>
-          <input type="password" name="password" class="form-control" placeholder="Enter your password" required>
+        <div style="font-size: 11.5px; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;">
+          World's Trusted Supplier of Orthopedic Implants
         </div>
       </div>
 
-      <div style="text-align:right;margin-bottom:14px;">
-        <a href="{% url 'forgot_password' %}" style="font-size:12px;color:#0052a5;text-decoration:none;">Forgot Password?</a>
+      <!-- Alert Messages -->
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert-restricted">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <!-- Form -->
+      <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+          <label class="form-label">Distributor ID / Email</label>
+          <div class="form-control-wrap">
+            <span class="form-icon"><i class="fa-regular fa-user"></i></span>
+            <input type="text" name="username" class="form-control" placeholder="Enter your ID or email" required autofocus>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="form-control-wrap">
+            <span class="form-icon"><i class="fa-solid fa-lock"></i></span>
+            <input type="password" name="password" class="form-control" placeholder="Enter your password" required>
+          </div>
+        </div>
+
+        <!-- Forgot Password link -->
+        <div style="display: flex; justify-content: flex-end; margin-top: -10px; margin-bottom: 24px;">
+          <a href="{% url 'forgot_password' %}" style="font-size: 13px; color: #2563eb; text-decoration: none; font-weight: 500; transition: color 0.15s;" onmouseover="this.style.color='#1d4ed8'" onmouseout="this.style.color='#2563eb'">Forgot Password?</a>
+        </div>
+
+        <!-- Submit CTA -->
+        <button type="submit" class="btn-login">Sign In</button>
+      </form>
+
+      <!-- Disclaimer -->
+      <div style="text-align: center; margin-top: 18px; font-size: 12px; color: #64748b; font-weight: 500;">
+        Secure distributor portal for authorized partners
       </div>
 
-      <button type="submit" class="btn-login btn-login-blue">Sign In</button>
-    </form>
-
-    <div class="login-footer" style="margin-top:14px;">
-      Admin or Staff? <a href="{% url 'admin_login' %}" style="color:#0052a5;font-weight:600;">Admin Portal →</a>
+      <!-- Back to Admin Panel Link -->
+      <div style="text-align: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9; font-size: 13px; color: #64748b;">
+        Admin or Staff? <a href="{% url 'admin_login' %}" style="color: #2563eb; font-weight: 600; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Admin Portal &rarr;</a>
+      </div>
     </div>
   </div>
 </div>
+
 </body>
 </html>

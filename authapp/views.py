@@ -35,13 +35,23 @@ def login_view(request):
         return redirect(_redirect_after_login(request.user))
 
     if request.method == 'POST':
-        username = request.POST.get('username', '').strip()
+        username_or_email = request.POST.get('username', '').strip()
         password = request.POST.get('password', '')
+
+        # Support login via Distributor ID (username) or Email
+        if '@' in username_or_email:
+            try:
+                user_obj = User.objects.get(email__iexact=username_or_email)
+                username = user_obj.username
+            except User.DoesNotExist:
+                username = username_or_email
+        else:
+            username = username_or_email
 
         user = authenticate(request, username=username, password=password)
 
         if user is None:
-            messages.error(request, 'Invalid username or password. Please try again.')
+            messages.error(request, 'Invalid Distributor ID / Email or password. Please try again.')
             return render(request, 'authapp/login.html')
 
         if not user.is_active:

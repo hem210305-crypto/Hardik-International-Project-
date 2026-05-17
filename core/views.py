@@ -13,6 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import F, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.core.files.storage import FileSystemStorage
+from django.http import JsonResponse
 
 from authapp.models import StaffPermission
 from .models import (
@@ -60,10 +61,21 @@ def role_required(*roles):
 
 
 def get_distributor(user):
-    """Return the Distributor linked to this user, or None."""
+    """
+    Return the Distributor linked to this user.
+    For Administrators/Superusers, falls back to the first distributor in the database
+    to enable seamless live previewing, auditing, and testing of database edits.
+    """
+    if not user or not user.is_authenticated:
+        return None
+    
+    is_admin_user = user.is_superuser or getattr(user, 'role', None) == 'admin'
+    if is_admin_user:
+        return Distributor.objects.first()
+        
     try:
         return user.distributor_profile
-    except Distributor.DoesNotExist:
+    except Exception:
         return None
 
 
@@ -81,6 +93,23 @@ def compute_next_balance(distributor, debit=Decimal('0'), credit=Decimal('0')):
     last = distributor.ledger_entries.order_by('-entry_date', '-id').first()
     prev = last.balance if last else Decimal('0')
     return prev + Decimal(str(debit)) - Decimal(str(credit))
+
+
+def format_inr(number):
+    try:
+        s = f"{int(number)}"
+        if len(s) <= 3:
+            return s
+        last_three = s[-3:]
+        remaining = s[:-3]
+        groups = []
+        while remaining:
+            groups.append(remaining[-2:])
+            remaining = remaining[:-2]
+        groups.reverse()
+        return ",".join(groups) + "," + last_three
+    except Exception:
+        return f"{number:,.0f}"
 
 
 def dist_ctx(request, section, title, subtitle, **extra):
@@ -145,25 +174,122 @@ def _cart_data(request):
 @role_required('distributor')
 def dashboard(request):
     distributor = get_distributor(request.user)
-    recent_orders = distributor.orders.prefetch_related('items').all()[:4]
-    recent_invoices = distributor.invoices.all()[:4]
+    recent_orders = distributor.orders.prefetch_related('items').all()[:4] if distributor else []
+    recent_invoices = distributor.invoices.all()[:4] if distributor else []
     announcements = Announcement.objects.filter(
         status=Announcement.PublishStatus.PUBLISHED
     )[:5]
     featured = Product.objects.filter(is_active=True).order_by('-created_at').first()
+
+    # 1. 100% Real mathematical calculations from active database records
+    outstanding_val = distributor.current_outstanding if distributor else Decimal('0')
+    formatted_outstanding = format_inr(outstanding_val)
+
+    credit_limit_val = distributor.credit_limit if distributor else Decimal('0')
+    formatted_credit_limit = format_inr(credit_limit_val)
+
+    credit_available_val = distributor.credit_available if distributor else Decimal('0')
+    formatted_credit_available = format_inr(credit_available_val)
+
+    last_order = distributor.orders.order_by('-order_date').first() if distributor else None
+    last_order_date = last_order.order_date.strftime('%d %b %Y') if last_order else 'N/A'
+
+    orders_count = distributor.orders.count() if distributor else 0
+
+    last_payment = distributor.ledger_entries.filter(entry_type='payment').order_by('-entry_date', '-id').first() if distributor else None
+    last_payment_amount = last_payment.credit if last_payment else Decimal('0')
+    formatted_last_payment = format_inr(last_payment_amount)
+
+    # 2. Dynamic Notifications Feed combining announcements and actual order status updates
+    notifications = []
+    # Fetch actual announcements
+    for ann in announcements[:3]:
+        notifications.append({
+            'title': ann.title,
+            'text': ann.content[:85] + '...' if len(ann.content) > 85 else ann.content,
+            'time': ann.published_at.strftime('%d %b %Y'),
+            'type': 'product' if ann.category == Announcement.Category.GENERAL else 'payment' if ann.category == Announcement.Category.URGENT else 'order',
+            'badge': ann.get_category_display().lower()
+        })
+
+    # Fetch actual order status updates
+    if distributor:
+        orders_for_notifs = distributor.orders.order_by('-updated_at')[:3]
+        for o in orders_for_notifs:
+            if o.status == 'shipped':
+                notifications.append({
+                    'title': f"Order #{o.order_id} Dispatched",
+                    'text': f"Your order #{o.order_id} has been dispatched and is on the way.",
+                    'time': o.dispatched_date.strftime('%d %b %Y') if o.dispatched_date else o.updated_at.strftime('%d %b %Y'),
+                    'type': 'order',
+                    'badge': 'order'
+                })
+            elif o.status == 'delivered':
+                notifications.append({
+                    'title': f"Order #{o.order_id} Completed",
+                    'text': f"Order #{o.order_id} has been delivered successfully.",
+                    'time': o.delivered_date.strftime('%d %b %Y') if o.delivered_date else o.updated_at.strftime('%d %b %Y'),
+                    'type': 'order',
+                    'badge': 'order'
+                })
+            elif o.status == 'pending':
+                notifications.append({
+                    'title': f"Order #{o.order_id} Placed",
+                    'text': f"Your order #{o.order_id} has been successfully submitted and is under review.",
+                    'time': o.order_date.strftime('%d %b %Y'),
+                    'type': 'order',
+                    'badge': 'order'
+                })
+
+    # Sort notifications to show latest (we will display up to 4 in template)
+    # If empty, let's leave list empty so the frontend displays its clean fallback or empty-state
+
+    # 3. Dynamic Recent Activity Feed pulling real ledger database transaction history
+    recent_activities = []
+    if distributor:
+        ledger_entries = distributor.ledger_entries.order_by('-entry_date', '-id')[:5]
+        for entry in ledger_entries:
+            if entry.entry_type == 'order':
+                title = "Order Placed"
+                amount = entry.debit
+                ref = f"Order #{entry.reference}"
+            elif entry.entry_type == 'payment':
+                title = "Payment Made"
+                amount = entry.credit
+                ref = f"Receipt #{entry.reference}"
+            elif entry.entry_type == 'credit':
+                title = "Credit Note Issued"
+                amount = entry.credit
+                ref = f"Ref #{entry.reference}"
+            else:
+                title = "Debit Note Issued"
+                amount = entry.debit
+                ref = f"Ref #{entry.reference}"
+
+            recent_activities.append({
+                'title': title,
+                'reference': ref,
+                'amount': format_inr(amount),
+                'date': entry.entry_date.strftime('%d %b %Y'),
+            })
+
     ctx = dist_ctx(
         request, 'dashboard', 'Dashboard',
-        f'Welcome back, {request.user.get_full_name() or request.user.username}!',
+        'Welcome back! Here\'s your account overview',
         metrics={
-            'outstanding': distributor.current_outstanding,
-            'orders_count': distributor.orders.count(),
-            'paid_amount': distributor.total_paid,
-            'credit_available': distributor.credit_available,
+            'outstanding': formatted_outstanding,
+            'credit_limit': formatted_credit_limit,
+            'credit_available': formatted_credit_available,
+            'last_order_date': last_order_date,
+            'orders_count': orders_count,
+            'last_payment_amount': formatted_last_payment,
         },
         recent_orders=recent_orders,
         recent_invoices=recent_invoices,
         announcements=announcements,
         featured_product=featured,
+        notifications=notifications[:4],  # Max 4 items
+        recent_activities=recent_activities[:3]  # Max 3 items
     )
     return render(request, 'core/distributor_dashboard.html', ctx)
 
@@ -189,6 +315,27 @@ def place_order(request):
                 cart.pop(product_id, None)
                 messages.info(request, 'Item removed.')
         request.session['cart'] = cart
+        
+        # AJAX response support for live cart updates
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('ajax') == 'true':
+            cart_items, cart_total, cart_count = _cart_data(request)
+            serialized_items = []
+            for item in cart_items:
+                serialized_items.append({
+                    'product_id': item['product'].id,
+                    'product_name': item['product'].name,
+                    'product_sku': item['product'].sku,
+                    'product_price': float(item['product'].selling_price),
+                    'quantity': item['quantity'],
+                    'line_total': float(item['line_total']),
+                })
+            return JsonResponse({
+                'success': True,
+                'cart_items': serialized_items,
+                'cart_total': float(cart_total),
+                'cart_count': cart_count,
+            })
+            
         return redirect('place_order')
 
     search = request.GET.get('search', '').strip()
@@ -222,6 +369,11 @@ def checkout(request):
 
     if request.method == 'POST':
         if cart_total > distributor.credit_available:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('ajax') == 'true':
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Order total ₹{cart_total} exceeds your available credit ₹{distributor.credit_available}.'
+                })
             messages.error(
                 request,
                 f'Order total ₹{cart_total} exceeds your available credit ₹{distributor.credit_available}.'
@@ -268,6 +420,17 @@ def checkout(request):
         request.session['cart'] = {}
         request.session['last_order_id'] = order.id
         messages.success(request, f'Order {order.order_id} placed successfully!')
+        
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('ajax') == 'true':
+            return JsonResponse({
+                'success': True,
+                'order_id': order.order_id,
+                'draft_person_name': order.draft_person_name,
+                'courier_name': order.courier_name,
+                'sales_person_name': order.sales_person_name,
+                'total_amount': float(order.total_amount),
+            })
+            
         return redirect('order_confirmed')
 
     ctx = dist_ctx(
@@ -293,7 +456,7 @@ def order_confirmed(request):
 def order_history(request):
     distributor = get_distributor(request.user)
     search = request.GET.get('search', '').strip()
-    orders = distributor.orders.prefetch_related('items').all()
+    orders = distributor.orders.prefetch_related('items').all().order_by('-id')
     if search:
         orders = orders.filter(order_id__icontains=search)
     ctx = dist_ctx(
@@ -307,7 +470,7 @@ def order_history(request):
 def bills_invoices(request):
     distributor = get_distributor(request.user)
     search = request.GET.get('search', '').strip()
-    invoices = distributor.invoices.all()
+    invoices = distributor.invoices.all().order_by('-id')
     if search:
         invoices = invoices.filter(invoice_number__icontains=search)
     ctx = dist_ctx(
@@ -325,15 +488,26 @@ def bills_invoices(request):
 
 @role_required('distributor')
 def ledger_payments(request):
+    from django.db.models import Sum
+    from django.db.models.functions import Coalesce
+    from decimal import Decimal
+    
     distributor = get_distributor(request.user)
+    entries = distributor.ledger_entries.all().order_by('-entry_date', '-id')
+    
+    total_debits = entries.aggregate(total=Coalesce(Sum('debit'), Decimal('0')))['total']
+    total_credits = entries.aggregate(total=Coalesce(Sum('credit'), Decimal('0')))['total']
+    net_balance = total_debits - total_credits
+    
     ctx = dist_ctx(
         request, 'ledger-payments', 'Ledger & Payment Outstanding',
-        'Track your financial statement.',
-        ledger_entries=distributor.ledger_entries.all(),
+        'Track your account statement and payments',
+        ledger_entries=entries,
         summary={
             'outstanding': distributor.current_outstanding,
-            'paid': distributor.total_paid,
-            'balance': distributor.latest_ledger_balance,
+            'total_debits': total_debits,
+            'total_credits': total_credits,
+            'net_balance': net_balance,
         },
     )
     return render(request, 'core/ledger_payments.html', ctx)
@@ -341,19 +515,9 @@ def ledger_payments(request):
 
 @role_required('distributor')
 def product_catalogue(request):
-    search = request.GET.get('search', '').strip()
-    category_slug = request.GET.get('category', '')
-    products = Product.objects.filter(is_active=True).select_related('category')
-    if search:
-        products = products.filter(name__icontains=search)
-    if category_slug:
-        products = products.filter(category__slug=category_slug)
     ctx = dist_ctx(
         request, 'catalogue', 'Product Catalogue', 'Browse our complete product range.',
-        products=products,
         categories=ProductCategory.objects.all(),
-        search=search,
-        selected_category=category_slug,
     )
     return render(request, 'core/product_catalogue.html', ctx)
 
@@ -372,20 +536,35 @@ def announcements(request):
 def profile_support(request):
     distributor = get_distributor(request.user)
     if request.method == 'POST':
-        for field in ('owner_name', 'phone', 'email', 'street_address', 'city',
-                      'state', 'pincode', 'bank_name', 'account_number', 'ifsc_code'):
-            value = request.POST.get(field, '').strip()
-            if value:
+        form_type = request.POST.get('form_type', 'profile')
+
+        if form_type == 'profile':
+            # Profile & address fields
+            for field in ('owner_name', 'phone', 'alternate_phone', 'email',
+                          'street_address', 'city', 'state', 'pincode',
+                          'gst_number', 'drug_license_number', 'pan_number'):
+                value = request.POST.get(field, '').strip()
                 setattr(distributor, field, value)
-        distributor.save()
-        messages.success(request, 'Profile updated successfully.')
+            distributor.save()
+            messages.success(request, 'Profile updated successfully.')
+
+        elif form_type == 'payment':
+            # Bank / payment fields
+            for field in ('bank_name', 'account_number', 'ifsc_code'):
+                value = request.POST.get(field, '').strip()
+                setattr(distributor, field, value)
+            distributor.save()
+            messages.success(request, 'Payment information updated successfully.')
+
         return redirect('profile_support')
-    settings = get_company_settings()
+
+    company_settings = get_company_settings()
     ctx = dist_ctx(
         request, 'profile-support', 'Profile & Support', 'Manage your account and get help.',
-        support_phone=settings.support_phone,
-        support_email=settings.support_email,
-        support_hours=settings.support_hours,
+        distributor=distributor,
+        support_phone=company_settings.support_phone,
+        support_email=company_settings.support_email,
+        support_hours=company_settings.support_hours,
     )
     return render(request, 'core/profile_support.html', ctx)
 
@@ -534,6 +713,31 @@ def admin_products(request):
                 messages.success(request, 'Product deleted successfully.')
             except Product.DoesNotExist:
                 messages.error(request, 'Product not found.')
+        elif action == 'edit':
+            product_id = request.POST.get('product_id')
+            try:
+                product = Product.objects.get(id=product_id)
+                cat_name = request.POST.get('category', 'General').strip() or 'General'
+                category, _ = ProductCategory.objects.get_or_create(name=cat_name)
+                
+                product.category = category
+                product.sku = request.POST.get('sku', '').strip() or product.sku
+                product.name = request.POST.get('name', '').strip()
+                product.manufacturer = request.POST.get('manufacturer', 'Hardik International Pvt Ltd').strip()
+                product.batch_number = request.POST.get('batch_number', '').strip()
+                product.hsn_code = request.POST.get('hsn_code', '').strip()
+                product.manufacture_date = request.POST.get('manufacture_date') or None
+                product.expiry_date = request.POST.get('expiry_date') or None
+                product.mrp = Decimal(request.POST.get('mrp', '0') or '0')
+                product.selling_price = Decimal(request.POST.get('selling_price', '0') or '0')
+                product.stock_quantity = int(request.POST.get('stock_quantity', '0') or 0)
+                product.min_stock_level = int(request.POST.get('min_stock_level', '0') or 0)
+                product.description = request.POST.get('description', '').strip()
+                
+                product.save()
+                messages.success(request, 'Product updated successfully.')
+            except Product.DoesNotExist:
+                messages.error(request, 'Product not found.')
         else:
             cat_name = request.POST.get('category', 'General').strip() or 'General'
             category, _ = ProductCategory.objects.get_or_create(name=cat_name)
@@ -594,15 +798,22 @@ def admin_products(request):
 @role_required('admin')
 def admin_orders(request):
     if request.method == 'POST':
-        order = get_object_or_404(Order, id=request.POST.get('order_id'))
-        new_status = request.POST.get('status', order.status)
-        order.status = new_status
-        if new_status in (Order.Status.SHIPPED, Order.Status.DELIVERED) and not order.dispatched_date:
-            order.dispatched_date = datetime.date.today()
-        if new_status == Order.Status.DELIVERED and not order.delivered_date:
-            order.delivered_date = datetime.date.today()
-        order.save()
-        messages.success(request, f'{order.order_id} updated to {order.get_status_display()}.')
+        action = request.POST.get('action')
+        if action == 'delete':
+            order = get_object_or_404(Order, id=request.POST.get('order_id'))
+            order_id_str = order.order_id
+            order.delete()
+            messages.success(request, f'Order {order_id_str} deleted successfully.')
+        else:
+            order = get_object_or_404(Order, id=request.POST.get('order_id'))
+            new_status = request.POST.get('status', order.status)
+            order.status = new_status
+            if new_status in (Order.Status.SHIPPED, Order.Status.DELIVERED) and not order.dispatched_date:
+                order.dispatched_date = datetime.date.today()
+            if new_status == Order.Status.DELIVERED and not order.delivered_date:
+                order.delivered_date = datetime.date.today()
+            order.save()
+            messages.success(request, f'{order.order_id} updated to {order.get_status_display()}.')
         return redirect('admin_orders')
 
     status_filter = request.GET.get('status', '')
@@ -660,6 +871,21 @@ def admin_invoices(request):
     distributors = Distributor.objects.filter(status=Distributor.Status.ACTIVE).order_by('business_name')
     orders = Order.objects.all().order_by('-id')[:50] # Getting recent 50 orders for the dropdown
     
+    # Filter logic
+    q = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+    
+    if q:
+        from django.db.models import Q
+        invoices = invoices.filter(
+            Q(invoice_number__icontains=q) |
+            Q(distributor__business_name__icontains=q) |
+            Q(distributor__code__icontains=q)
+        )
+    
+    if status_filter:
+        invoices = invoices.filter(status=status_filter)
+    
     total_amount = invoices.aggregate(total=Coalesce(Sum('amount'), Decimal('0')))['total']
     paid_amount = invoices.filter(status=Invoice.Status.PAID).aggregate(total=Coalesce(Sum('amount'), Decimal('0')))['total']
     overdue_amount = invoices.filter(status=Invoice.Status.OVERDUE).aggregate(total=Coalesce(Sum('amount'), Decimal('0')))['total']
@@ -686,8 +912,53 @@ def admin_invoices(request):
         orders=orders,
         totals=totals,
         suggested_inv_no=suggested_inv_no,
+        q=q,
+        status_filter=status_filter,
     )
     return render(request, 'core/admin_invoices.html', ctx)
+
+@role_required('admin')
+def admin_invoice_detail(request, pk):
+    invoice = get_object_or_404(Invoice, pk=pk)
+    
+    if request.method == 'POST':
+        new_status = request.POST.get('status')
+        if new_status in dict(Invoice.Status.choices):
+            invoice.status = new_status
+            invoice.save()
+            messages.success(request, f"Invoice {invoice.invoice_number} updated to {invoice.get_status_display()}.")
+            return redirect('admin_invoice_detail', pk=pk)
+            
+    ctx = admin_ctx(
+        request, 'invoices', f'Invoice {invoice.invoice_number}', 'Viewing invoice details.',
+        invoice=invoice,
+    )
+    return render(request, 'core/admin_invoice_detail.html', ctx)
+
+
+@role_required('admin')
+def admin_invoice_download(request, pk):
+    invoice = get_object_or_404(Invoice, pk=pk)
+    # Mock download — in a real app, this would generate a PDF
+    from django.http import HttpResponse
+    content = f"""
+    HARDIK INTERNATIONAL PVT LTD
+    INVOICE: {invoice.invoice_number}
+    ----------------------------------
+    Date: {invoice.invoice_date}
+    Due Date: {invoice.due_date}
+    
+    Distributor: {invoice.distributor.business_name}
+    Code: {invoice.distributor.code}
+    
+    Amount: INR {invoice.amount}
+    Status: {invoice.status.upper()}
+    
+    This is a computer generated document.
+    """
+    response = HttpResponse(content, content_type='text/plain')
+    response['Content-Disposition'] = f'attachment; filename="invoice_{invoice.invoice_number}.txt"'
+    return response
 
 
 @role_required('admin')
@@ -719,6 +990,12 @@ def admin_announcements(request):
         content = request.POST.get('content', '').strip()
         edit_id = request.POST.get('edit_ann_id')
 
+        # Custom badges & layout features matching Figma mockup
+        is_featured = request.POST.get('is_featured') == 'true'
+        tag_label = request.POST.get('tag_label', '').strip()
+        severity_label = request.POST.get('severity_label', '').strip()
+        icon_type = request.POST.get('icon_type', 'megaphone').strip()
+
         if edit_id:
             try:
                 ann = Announcement.objects.get(id=edit_id)
@@ -726,6 +1003,10 @@ def admin_announcements(request):
                 ann.category = category
                 ann.content = content
                 ann.status = status
+                ann.is_featured = is_featured
+                ann.tag_label = tag_label
+                ann.severity_label = severity_label
+                ann.icon_type = icon_type
                 if image_url or 'image_file' in request.FILES:
                     ann.image_url = image_url
                 ann.save()
@@ -740,6 +1021,10 @@ def admin_announcements(request):
                 image_url=image_url,
                 status=status,
                 published_at=datetime.date.today(),
+                is_featured=is_featured,
+                tag_label=tag_label,
+                severity_label=severity_label,
+                icon_type=icon_type,
             )
             messages.success(request, 'Announcement saved.')
         return redirect('admin_announcements')
@@ -765,98 +1050,6 @@ def admin_announcements(request):
         totals=totals,
     )
     return render(request, 'core/admin_announcements.html', ctx)
-
-@role_required('admin')
-def admin_distributors(request):
-    """Handle the Distributors Management page.
-    GET: render the page with distributor list and summary counts.
-    POST: create a new distributor from the submitted form.
-    The modal form in `admin_distributors.html` posts to this same URL.
-    """
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        
-        if action == 'delete':
-            distributor_id = request.POST.get('distributor_id')
-            try:
-                Distributor.objects.get(id=distributor_id).delete()
-                messages.success(request, 'Distributor deleted successfully.')
-            except Distributor.DoesNotExist:
-                messages.error(request, 'Distributor not found.')
-        
-        elif action == 'edit':
-            distributor_id = request.POST.get('distributor_id')
-            try:
-                dist = Distributor.objects.get(id=distributor_id)
-                dist.business_name = request.POST.get('business_name', dist.business_name).strip()
-                dist.owner_name = request.POST.get('owner_name', dist.owner_name).strip()
-                dist.phone = request.POST.get('phone', dist.phone).strip()
-                dist.credit_limit = request.POST.get('credit_limit', dist.credit_limit)
-                dist.payment_terms_days = request.POST.get('payment_terms_days', dist.payment_terms_days)
-                dist.status = request.POST.get('status', dist.status)
-                dist.save()
-                messages.success(request, f'Distributor "{dist.business_name}" updated successfully.')
-            except Distributor.DoesNotExist:
-                messages.error(request, 'Distributor not found.')
-
-        else:
-            # Add new distributor
-            business_name = request.POST.get('business_name', '').strip()
-            owner_name = request.POST.get('owner_name', '').strip()
-            email = request.POST.get('email', '').strip()
-            phone = request.POST.get('phone', '').strip()
-            alternate_phone = request.POST.get('alternate_phone', '').strip()
-            street_address = request.POST.get('street_address', '').strip()
-            city = request.POST.get('city', '').strip()
-            state = request.POST.get('state', '').strip()
-            pincode = request.POST.get('pincode', '').strip()
-            gst_number = request.POST.get('gst_number', '').strip()
-            drug_license_number = request.POST.get('drug_license_number', '').strip()
-            pan_number = request.POST.get('pan_number', '').strip()
-            credit_limit = request.POST.get('credit_limit', '0').strip()
-            payment_terms_days = request.POST.get('payment_terms_days', '0').strip()
-            notes = request.POST.get('notes', '').strip()
-            # Basic validation – at minimum business name and primary phone are required
-            if not business_name or not phone:
-                messages.error(request, 'Business name and primary phone are required.')
-            else:
-                Distributor.objects.create(
-                    business_name=business_name,
-                    owner_name=owner_name,
-                    email=email,
-                    phone=phone,
-                    alternate_phone=alternate_phone or None,
-                    street_address=street_address,
-                    city=city,
-                    state=state,
-                    pincode=pincode,
-                    gst_number=gst_number or None,
-                    drug_license_number=drug_license_number,
-                    pan_number=pan_number or None,
-                    credit_limit=credit_limit,
-                    payment_terms_days=payment_terms_days,
-                    notes=notes or None,
-                    status=Distributor.Status.ACTIVE,  # default to active on creation
-                )
-                messages.success(request, f'Distributor "{business_name}" added successfully.')
-        return redirect('admin_distributors')
-
-    # GET request – list distributors and compute summary totals
-    distributors = Distributor.objects.all().order_by('-joined_on')
-    totals = {
-        'active': distributors.filter(status=Distributor.Status.ACTIVE).count(),
-        'inactive': distributors.filter(status=Distributor.Status.INACTIVE).count(),
-        'suspended': distributors.filter(status=Distributor.Status.SUSPENDED).count(),
-    }
-    ctx = admin_ctx(
-        request,
-        'distributors',
-        'Distributors Management',
-        'Manage distributor accounts and permissions.',
-        distributors=distributors,
-        totals=totals,
-    )
-    return render(request, 'core/admin_distributors.html', ctx)
 
 
 @role_required('admin')
@@ -1072,38 +1265,56 @@ def admin_analytics(request):
             return f"{trend_num:.1f}%", 'trend-down', 'ti-trending-down'
 
     def format_currency(num):
+        if num is None:
+            num = Decimal('0')
+        elif not isinstance(num, Decimal):
+            num = Decimal(str(num))
+            
         if num >= 10000000:
-            return f"{num / Decimal('10000000'):.1f}Cr"
+            return f"{num / Decimal('10000000'):.2f}Cr"
         elif num >= 100000:
-            return f"{num / Decimal('100000'):.1f}L"
+            return f"{num / Decimal('100000'):.2f}L"
         return f"{num:,.0f}"
+
+    def calculate_trend(curr, prev):
+        curr = float(curr) if curr else 0.0
+        prev = float(prev) if prev else 0.0
+        if prev > 0:
+            return ((curr - prev) / prev) * 100.0
+        elif curr > 0:
+            return 100.0
+        return 0.0
 
     # Revenue
     total_rev = Order.objects.aggregate(total=Coalesce(Sum('total_amount'), Decimal('0')))['total']
     curr_rev = Order.objects.filter(order_date__gte=first_day_current_month).aggregate(total=Coalesce(Sum('total_amount'), Decimal('0')))['total']
     prev_rev = Order.objects.filter(order_date__gte=first_day_last_month, order_date__lt=first_day_current_month).aggregate(total=Coalesce(Sum('total_amount'), Decimal('0')))['total']
-    rev_trend_num = ((curr_rev - prev_rev) / prev_rev * 100) if prev_rev > 0 else 0
+    
+    rev_trend_num = calculate_trend(curr_rev, prev_rev)
     rev_trend_str, rev_trend_cls, rev_trend_icon = get_trend_details(rev_trend_num)
 
     # Orders
     total_ord = Order.objects.count()
     curr_ord = Order.objects.filter(order_date__gte=first_day_current_month).count()
     prev_ord = Order.objects.filter(order_date__gte=first_day_last_month, order_date__lt=first_day_current_month).count()
-    ord_trend_num = ((curr_ord - prev_ord) / prev_ord * 100) if prev_ord > 0 else 0
+    
+    ord_trend_num = calculate_trend(curr_ord, prev_ord)
     ord_trend_str, ord_trend_cls, ord_trend_icon = get_trend_details(ord_trend_num)
 
     # Distributors
     active_dist = Distributor.objects.filter(status=Distributor.Status.ACTIVE).count()
     curr_dist = Distributor.objects.filter(status=Distributor.Status.ACTIVE, joined_on__gte=first_day_current_month).count()
     prev_dist = Distributor.objects.filter(status=Distributor.Status.ACTIVE, joined_on__gte=first_day_last_month, joined_on__lt=first_day_current_month).count()
-    dist_trend_num = ((curr_dist - prev_dist) / prev_dist * 100) if prev_dist > 0 else 0
+    
+    dist_trend_num = calculate_trend(curr_dist, prev_dist)
     dist_trend_str, dist_trend_cls, dist_trend_icon = get_trend_details(dist_trend_num)
 
     # Products Sold
     total_prod = OrderItem.objects.aggregate(total=Coalesce(Sum('quantity'), 0))['total']
     curr_prod = OrderItem.objects.filter(order__order_date__gte=first_day_current_month).aggregate(total=Coalesce(Sum('quantity'), 0))['total']
     prev_prod = OrderItem.objects.filter(order__order_date__gte=first_day_last_month, order__order_date__lt=first_day_current_month).aggregate(total=Coalesce(Sum('quantity'), 0))['total']
-    prod_trend_num = ((curr_prod - prev_prod) / prev_prod * 100) if prev_prod > 0 else 0
+    
+    prod_trend_num = calculate_trend(curr_prod, prev_prod)
     prod_trend_str, prod_trend_cls, prod_trend_icon = get_trend_details(prod_trend_num)
 
     # Top Distributors
@@ -1111,6 +1322,7 @@ def admin_analytics(request):
     top_distributors = [
         {'rank': idx, 'name': d.business_name, 'amount': format_currency(d.revenue)}
         for idx, d in enumerate(top_dist_qs, 1)
+        if d.revenue > 0
     ]
 
     # Top Categories
@@ -1118,6 +1330,7 @@ def admin_analytics(request):
     top_categories = [
         {'rank': idx, 'name': c.name}
         for idx, c in enumerate(top_cat_qs, 1)
+        if c.sold > 0
     ]
 
     context_data = {
@@ -1175,12 +1388,12 @@ def admin_settings(request):
             messages.success(request, 'Notification preferences updated.')
             
         elif section == 'security':
-            try:
-                setting.session_timeout_minutes = int(request.POST.get('session_timeout', setting.session_timeout_minutes))
-                setting.password_expiry_days = int(request.POST.get('password_expiry', setting.password_expiry_days))
-            except ValueError:
-                pass
-            setting.two_factor_enabled = 'two_factor_enabled' in request.POST
+            timeout_str = request.POST.get('session_timeout', '').strip()
+            expiry_str = request.POST.get('password_expiry', '').strip()
+            
+            setting.session_timeout_minutes = int(timeout_str) if timeout_str.isdigit() else None
+            setting.password_expiry_days = int(expiry_str) if expiry_str.isdigit() else None
+            
             # login_activity_logs is currently not in the model but we simulate its save if needed
             setting.save()
             messages.success(request, 'Security settings updated.')

@@ -156,7 +156,23 @@
         <!-- Actions -->
         <div class="ps-3 d-flex flex-column align-items-end justify-content-center border-start border-light-subtle" style="width: 150px;">
            <div class="d-flex gap-2">
-             <button class="btn btn-sm btn-outline-secondary border-light-subtle d-flex align-items-center">
+             <button class="btn btn-sm btn-outline-secondary border-light-subtle d-flex align-items-center"
+                     data-bs-toggle="modal"
+                     data-bs-target="#editModal"
+                     data-id="{{ p.id }}"
+                     data-name="{{ p.name }}"
+                     data-sku="{{ p.sku }}"
+                     data-category="{{ p.category.name|default:'General' }}"
+                     data-manufacturer="{{ p.manufacturer }}"
+                     data-batch="{{ p.batch_number|default:'' }}"
+                     data-hsn="{{ p.hsn_code|default:'' }}"
+                     data-mdate="{{ p.manufacture_date|date:'Y-m-d' }}"
+                     data-edate="{{ p.expiry_date|date:'Y-m-d' }}"
+                     data-mrp="{{ p.mrp }}"
+                     data-sell="{{ p.selling_price }}"
+                     data-qty="{{ p.stock_quantity }}"
+                     data-min="{{ p.min_stock_level }}"
+                     data-desc="{{ p.description|default:'' }}">
                  <i class="ti ti-edit me-1"></i> Edit
              </button>
              <form method="post" class="m-0 p-0" onsubmit="return confirm('Delete this product?');">
@@ -412,6 +428,101 @@
   </div>
 </div>
 
+<!-- Edit Modal -->
+<div class="modal modal-blur fade" id="editModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <form method="post" id="editProductForm">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="edit">
+        <input type="hidden" name="product_id">
+        
+        <div class="modal-header border-0 pb-0 pt-4 px-4 d-flex align-items-start">
+          <div class="d-flex align-items-center">
+             <div class="bg-primary-lt text-primary rounded d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: #eef2ff; color: #4f46e5;">
+                 <i class="ti ti-edit fs-2"></i>
+             </div>
+             <div>
+               <h5 class="modal-title fs-3 fw-bold mb-1">Edit Product</h5>
+               <div class="text-muted fs-7">Modify the product details and save changes</div>
+             </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        
+        <div class="modal-body pt-4 px-4 pb-0">
+          <div class="row g-3 mb-4">
+             <div class="col-md-8">
+                <label class="form-label-custom">Product Name <span class="required-ast">*</span></label>
+                <input type="text" name="name" class="form-control bg-light border-0" required>
+             </div>
+             <div class="col-md-4">
+                <label class="form-label-custom">Product SKU (Read-Only)</label>
+                <input type="text" name="sku" class="form-control bg-light border-0" readonly>
+             </div>
+             <div class="col-md-6">
+                <label class="form-label-custom">Category <span class="required-ast">*</span></label>
+                <input type="text" name="category" class="form-control bg-light border-0" required>
+             </div>
+             <div class="col-md-6">
+                <label class="form-label-custom">Manufacturer <span class="required-ast">*</span></label>
+                <input type="text" name="manufacturer" class="form-control bg-light border-0" required>
+             </div>
+             <div class="col-md-6">
+                <label class="form-label-custom">Batch Number</label>
+                <input type="text" name="batch_number" class="form-control bg-light border-0">
+             </div>
+             <div class="col-md-6">
+                <label class="form-label-custom">HSN Code</label>
+                <input type="text" name="hsn_code" class="form-control bg-light border-0">
+             </div>
+             
+             <!-- Pricing and Stock Row -->
+             <div class="col-md-3">
+                <label class="form-label-custom">MRP (₹) <span class="required-ast">*</span></label>
+                <input type="number" step="0.01" name="mrp" class="form-control bg-light border-0" required>
+             </div>
+             <div class="col-md-3">
+                <label class="form-label-custom">Selling Price (₹) <span class="required-ast">*</span></label>
+                <input type="number" step="0.01" name="selling_price" class="form-control bg-light border-0" required>
+             </div>
+             <div class="col-md-3">
+                <label class="form-label-custom">Stock Quantity <span class="required-ast">*</span></label>
+                <input type="number" name="stock_quantity" class="form-control bg-light border-0" required>
+             </div>
+             <div class="col-md-3">
+                <label class="form-label-custom">Min Stock Level <span class="required-ast">*</span></label>
+                <input type="number" name="min_stock_level" class="form-control bg-light border-0" required>
+             </div>
+
+             <!-- Dates -->
+             <div class="col-md-6">
+                <label class="form-label-custom">Manufacturing Date</label>
+                <input type="date" name="manufacture_date" class="form-control bg-light border-0">
+             </div>
+             <div class="col-md-6">
+                <label class="form-label-custom">Expiry Date</label>
+                <input type="date" name="expiry_date" class="form-control bg-light border-0">
+             </div>
+
+             <div class="col-12">
+                <label class="form-label-custom">Additional Information</label>
+                <textarea name="description" class="form-control bg-light border-0" rows="3" placeholder="Enter any additional product information..."></textarea>
+             </div>
+          </div>
+        </div>
+        
+        <div class="modal-footer border-0 pt-0 pb-4 px-4 mt-2 d-flex justify-content-end">
+           <button type="button" class="btn btn-link text-muted text-decoration-none" data-bs-dismiss="modal">Cancel</button>
+           <button type="submit" class="btn btn-primary text-white fw-bold px-4 rounded-pill shadow-sm" style="background-color: #2563eb; border-color: #2563eb;">
+              <i class="ti ti-check me-1"></i> Save Changes
+           </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -495,6 +606,46 @@ document.addEventListener('DOMContentLoaded', function() {
             updatePStepUI();
         }
     });
+
+    // Product Edit Modal Fields Populating
+    const editModal = document.getElementById('editModal');
+    if (editModal) {
+        editModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            
+            // Extract data attributes from clicked button
+            const id = button.getAttribute('data-id');
+            const name = button.getAttribute('data-name');
+            const sku = button.getAttribute('data-sku');
+            const category = button.getAttribute('data-category');
+            const manufacturer = button.getAttribute('data-manufacturer');
+            const batch = button.getAttribute('data-batch');
+            const hsn = button.getAttribute('data-hsn');
+            const mdate = button.getAttribute('data-mdate');
+            const edate = button.getAttribute('data-edate');
+            const mrp = button.getAttribute('data-mrp');
+            const sell = button.getAttribute('data-sell');
+            const qty = button.getAttribute('data-qty');
+            const min = button.getAttribute('data-min');
+            const desc = button.getAttribute('data-desc');
+
+            // Fill form fields
+            editModal.querySelector('input[name="product_id"]').value = id || '';
+            editModal.querySelector('input[name="name"]').value = name || '';
+            editModal.querySelector('input[name="sku"]').value = sku || '';
+            editModal.querySelector('input[name="category"]').value = category || '';
+            editModal.querySelector('input[name="manufacturer"]').value = manufacturer || '';
+            editModal.querySelector('input[name="batch_number"]').value = batch || '';
+            editModal.querySelector('input[name="hsn_code"]').value = hsn || '';
+            editModal.querySelector('input[name="manufacture_date"]').value = mdate || '';
+            editModal.querySelector('input[name="expiry_date"]').value = edate || '';
+            editModal.querySelector('input[name="mrp"]').value = mrp || '0.00';
+            editModal.querySelector('input[name="selling_price"]').value = sell || '0.00';
+            editModal.querySelector('input[name="stock_quantity"]').value = qty || '0';
+            editModal.querySelector('input[name="min_stock_level"]').value = min || '0';
+            editModal.querySelector('textarea[name="description"]').value = desc || '';
+        });
+    }
 });
 </script>
 {% endblock %}

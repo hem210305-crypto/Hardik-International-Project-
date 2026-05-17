@@ -4,8 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <style>
-    .msg-error   { padding:10px 16px;margin-bottom:12px;border-radius:8px;font-size:13px;font-weight:500;background:#fee2e2;color:#b91c1c; }
-    .msg-success { padding:10px 16px;margin-bottom:12px;border-radius:8px;font-size:13px;font-weight:500;background:#dcfce7;color:#15803d; }
+    .msg-error   { padding: 14px 20px; margin-bottom: 24px; border-radius: 12px; font-size: 13.5px; font-weight: 600; background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; }
+    .msg-success { padding: 14px 20px; margin-bottom: 24px; border-radius: 12px; font-size: 13.5px; font-weight: 600; background: #dcfce7; border: 1px solid #bbf7d0; color: #15803d; }
   </style>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Hardik International — Distributor{% endblock %}</title>
@@ -13,24 +13,146 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  
   <style>
-    :root { --sidebar-active: #0052a5; }
+    /* ===== Figma Distributor Theme Overrides ===== */
+    body {
+      background-color: #f8fafc !important; /* Premium light page background matching Figma */
+    }
+
+    /* Admin header overrides for distributor */
+    .admin-header {
+      background: #ffffff !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+      color: #1e293b !important;
+      height: 70px !important;
+      padding: 0 32px !important;
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      z-index: 101 !important;
+    }
+
+    .btn-bell {
+      color: #64748b !important;
+      transition: color 0.15s !important;
+    }
+    
+    .btn-bell:hover {
+      color: #1e293b !important;
+    }
+
+    .header-user {
+      text-align: right;
+      margin-right: 12px;
+    }
+
+    .btn-logout {
+      color: #475569 !important;
+      border-left: 1px solid #e2e8f0 !important;
+      font-weight: 600 !important;
+      transition: color 0.15s !important;
+      padding-left: 20px !important;
+    }
+
+    .btn-logout:hover {
+      color: #0f172a !important;
+    }
+
+    /* Sidebar overrides for distributor */
+    .sidebar {
+      background: #ffffff !important;
+      top: 70px !important;
+      height: calc(100vh - 70px) !important;
+      border-right: 1px solid #e2e8f0 !important;
+      box-shadow: none !important;
+      position: fixed !important;
+      left: 0 !important;
+      width: 260px !important;
+      z-index: 100 !important;
+    }
+
+    .sidebar-brand {
+      display: none !important; /* Brand is in the top header bar in Figma */
+    }
+
+    .sidebar-nav {
+      padding: 24px 0 !important;
+    }
+
+    .nav-item {
+      color: #64748b !important;
+      font-weight: 600 !important;
+      margin: 6px 16px !important;
+      padding: 12px 20px !important;
+      border-radius: 12px !important;
+      transition: all 0.2s ease !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 14px !important;
+      font-size: 14px !important;
+      text-decoration: none !important;
+    }
+
+    .nav-item:hover {
+      background: #f1f5f9 !important;
+      color: #1e293b !important;
+    }
+
+    .nav-item.active {
+      background: #eff6ff !important; /* Soft light blue pill background */
+      color: #2563eb !important; /* Premium brand blue text */
+      box-shadow: none !important;
+      font-weight: 700 !important;
+    }
+
+    .nav-item i {
+      font-size: 16px !important;
+      width: 20px !important;
+      text-align: center !important;
+      opacity: 1 !important;
+    }
+
+    .nav-item.active i {
+      color: #2563eb !important;
+    }
+
+    /* Main content layout adjustment */
+    .admin-main {
+      margin-left: 260px !important;
+      margin-top: 70px !important;
+      padding: 36px 40px !important;
+      background-color: #f8fafc !important;
+      min-height: calc(100vh - 70px) !important;
+    }
+
+    .page-header-row {
+      margin-bottom: 28px !important;
+    }
+
+    .page-title {
+      font-size: 24px !important;
+      font-weight: 800 !important;
+      color: #0f172a !important;
+    }
+
+    .page-subtitle {
+      font-size: 13.5px !important;
+      color: #64748b !important;
+      margin-top: 4px !important;
+    }
   </style>
   {% block extra_css %}{% endblock %}
 </head>
 <body>
 <div class="admin-layout">
 
-  <!-- ===== SIDEBAR ===== -->
+  <!-- ===== SIDEBAR (Matches Figma sidebar navigation) ===== -->
   <aside class="sidebar">
-    <div class="sidebar-brand">
-      <div class="sidebar-logo">H</div>
-      <div class="sidebar-brand-text">
-        <div class="portal-name">Distributor Portal</div>
-        <div class="company-name">Hardik International Pvt Ltd</div>
-      </div>
-    </div>
-
     <nav class="sidebar-nav">
       <a href="{% url 'dashboard' %}"        class="nav-item {% if section == 'dashboard' %}active{% endif %}">
         <i class="fa-solid fa-gauge-high"></i> Dashboard
@@ -59,20 +181,44 @@
     </nav>
   </aside>
 
-  <!-- ===== HEADER ===== -->
+  <!-- ===== HEADER (White bar, left branding logo, right distributor profiles & logout) ===== -->
   <header class="admin-header">
-    <div class="btn-bell">
-      <i class="fa-regular fa-bell" style="color:#6b7280;font-size:15px;"></i>
-    </div>
-    <div class="header-user">
-      <div>
-        <div class="user-name">{{ distributor.business_name|default:request.user.username }}</div>
-        <div class="user-email">{{ distributor.email|default:request.user.email }}</div>
+    <!-- Left branding -->
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 42px; height: 42px; background: #0052a5; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0, 82, 165, 0.12);">
+        <svg width="26" height="26" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="20" stroke="white" stroke-width="2.5" stroke-dasharray="5 2.5"/>
+          <path d="M16 14V34M32 14V34M16 24H32" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+        </svg>
       </div>
+      <h1 style="font-size: 16px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: 0.3px; text-transform: uppercase; font-family: 'Inter', sans-serif;">
+        Hardik International Pvt Ltd
+      </h1>
     </div>
-    <a href="{% url 'logout' %}" class="btn-logout">
-      <i class="fa-solid fa-right-from-bracket"></i> Logout
-    </a>
+
+    <!-- Right user controls -->
+    <div style="display: flex; align-items: center; gap: 20px;">
+      <!-- Bell Notification -->
+      <button class="btn-bell" style="position: relative; border: none; background: transparent; padding: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+        <i class="fa-regular fa-bell" style="font-size: 18px;"></i>
+        <span style="position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; background: #ef4444; border-radius: 50%;"></span>
+      </button>
+
+      <!-- Distributor profile info -->
+      <div class="header-user">
+        <div style="font-size: 13px; font-weight: 700; color: #1e293b; line-height: 1.3;">
+          Distributor: {{ distributor.business_name|default:"ABC Surgical Ltd." }}
+        </div>
+        <div style="font-size: 11px; font-weight: 600; color: #64748b; margin-top: 1px; letter-spacing: 0.5px;">
+          ID: {{ distributor.code|default:"DIST-2024-001" }}
+        </div>
+      </div>
+
+      <!-- Logout button -->
+      <a href="{% url 'logout' %}" class="btn-logout">
+        <i class="fa-solid fa-right-from-bracket" style="font-size: 13.5px; margin-right: 6px;"></i> Logout
+      </a>
+    </div>
   </header>
 
   <!-- ===== MAIN CONTENT ===== -->

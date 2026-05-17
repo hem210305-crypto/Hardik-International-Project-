@@ -241,6 +241,37 @@
     transition: opacity 0.15s;
   }
   .btn-save-modal:hover { opacity: 0.9; }
+
+  /* Large details modal */
+  .modal-box-large {
+    background: #fff; border-radius: 14px; padding: 28px 32px;
+    width: 680px; max-width: 95vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+    position: relative;
+  }
+  .order-meta-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    background: #f8fafc; border-radius: 10px; padding: 16px;
+    margin-bottom: 20px; font-size: 0.85rem; border: 1px solid #f1f5f9;
+  }
+  .order-meta-grid div { font-weight: 700; color: #111827; }
+  .order-meta-grid span { font-weight: 500; color: #6b7280; }
+  .modal-table-wrap {
+    max-height: 240px; overflow-y: auto;
+    border: 1px solid #e5e7eb; border-radius: 10px;
+    margin-bottom: 20px;
+  }
+  .modal-items-table {
+    width: 100%; border-collapse: collapse; font-size: 0.82rem; text-align: left;
+  }
+  .modal-items-table th {
+    padding: 10px 14px; background: #f9fafb; color: #6b7280; font-weight: 600;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .modal-items-table td {
+    padding: 12px 14px; color: #374151; border-bottom: 1px solid #f3f4f6;
+  }
+  .modal-items-table tr:last-child td { border-bottom: none; }
 </style>
 {% endblock %}
 
@@ -337,12 +368,42 @@
             {% endif %}
           </td>
           <td>
-            <a href="#" class="action-view">
+            <a href="javascript:void(0);" class="action-view" onclick="openViewModal('{{ order.id }}')">
               <i class="ti ti-eye"></i> View
             </a>
             <button class="btn-update" onclick="openUpdateModal('{{ order.id }}', '{{ order.status }}', '{{ order.order_id }}')">
               Update Status
             </button>
+            <form method="post" action="{% url 'admin_orders' %}" class="d-inline m-0 p-0" onsubmit="return confirm('Are you sure you want to delete order {{ order.order_id }}? This action is irreversible.');">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="order_id" value="{{ order.id }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger border-light-subtle text-danger" style="padding: 5px 10px; border-radius: 6px; margin-left: 6px;" title="Delete Order">
+                <i class="ti ti-trash"></i>
+              </button>
+            </form>
+            
+            <!-- Hidden product serialization payload for instant modal loads -->
+            <div id="payload-{{ order.id }}" style="display: none;" 
+                 data-order-id="{{ order.order_id }}" 
+                 data-date="{{ order.order_date|date:'Y-m-d' }}"
+                 data-distributor="{{ order.distributor.business_name }} ({{ order.distributor.code }})"
+                 data-draft="{{ order.draft_person_name|default:'(not specified)' }}"
+                 data-courier="{{ order.courier_name|default:'(not specified)' }}"
+                 data-sales="{{ order.sales_person_name|default:'(not specified)' }}"
+                 data-total="₹{{ order.total_amount|floatformat:'0' }}"
+                 data-count="{{ order.items.count }}"
+                 data-status="{{ order.get_status_display }}"
+                 data-payment="{{ order.get_payment_status_display }}">
+              {% for item in order.items.all %}
+                <div class="item-spec" 
+                     data-name="{{ item.product.name }}" 
+                     data-qty="{{ item.quantity }}" 
+                     data-price="₹{{ item.unit_price|floatformat:'0' }}" 
+                     data-total="₹{{ item.line_total|floatformat:'0' }}">
+                </div>
+              {% endfor %}
+            </div>
           </td>
         </tr>
         {% empty %}
@@ -404,7 +465,151 @@
   </div>
 </div>
 
+<!-- View Details Modal -->
+<div class="modal-backdrop-custom" id="viewModal">
+  <div class="modal-box-large">
+    <div class="d-flex justify-content-between align-items-start mb-3" style="border-bottom: 1px solid #f1f5f9; padding-bottom: 14px;">
+      <div>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: #111827; margin: 0 0 2px;" id="vOrderID">Order Details</h3>
+        <span style="font-size: 0.78rem; font-weight: 600; color: #6b7280;" id="vOrderDate">Placed on: —</span>
+      </div>
+      <button type="button" onclick="closeViewModal()" style="background: none; border: none; font-size: 1.25rem; color: #9ca3af; cursor: pointer; padding: 4px; line-height: 1;"><i class="ti ti-x"></i></button>
+    </div>
+
+    <!-- Metadata Grid -->
+    <div class="order-meta-grid">
+      <div class="d-flex flex-column gap-2">
+        <div>Distributor: <span id="vDistributor" style="font-weight: 500; color: #4b5563;">—</span></div>
+        <div>Draft Person: <span id="vDraft" style="font-weight: 500; color: #4b5563;">—</span></div>
+        <div>Courier Selected: <span id="vCourier" style="font-weight: 500; color: #4b5563;">—</span></div>
+      </div>
+      <div class="d-flex flex-column gap-2">
+        <div>Sales Person: <span id="vSales" style="font-weight: 500; color: #4b5563;">—</span></div>
+        <div>Shipping Status: <span id="vStatus" style="font-weight: 700;">—</span></div>
+        <div>Payment Status: <span id="vPayment" style="font-weight: 700;">—</span></div>
+      </div>
+    </div>
+
+    <!-- Itemized products table -->
+    <div class="modal-table-wrap">
+      <table class="modal-items-table" id="vItemsTable">
+        <thead>
+          <tr>
+            <th>Product Name</th>
+            <th style="width: 15%; text-align: center;">Qty</th>
+            <th style="width: 20%; text-align: right;">Unit Price</th>
+            <th style="width: 25%; text-align: right;">Line Total</th>
+          </tr>
+        </thead>
+        <tbody id="vItemsBody">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Totals summary row -->
+    <div class="d-flex justify-content-between align-items-center" style="font-size: 0.9rem; font-weight: 700; color: #111827; border-top: 1px dashed #e5e7eb; padding-top: 14px;">
+      <span>Total Items: <span id="vItemCount" style="color: #6b7280; font-weight: 500;">0</span></span>
+      <span>Grand Total: <span id="vGrandTotal" style="color: #2563eb; font-size: 1.1rem; font-weight: 800;">₹0</span></span>
+    </div>
+    
+    <div class="mt-4 d-flex justify-content-end">
+      <button type="button" class="btn-cancel-modal" onclick="closeViewModal()">Close Details</button>
+    </div>
+  </div>
+</div>
+
 <script>
+  // Open View Modal and populate details instantly from payload
+  function openViewModal(orderId) {
+    const payload = document.getElementById(`payload-${orderId}`);
+    if (!payload) return;
+
+    // Read attributes
+    const oid = payload.getAttribute('data-order-id');
+    const date = payload.getAttribute('data-date');
+    const dist = payload.getAttribute('data-distributor');
+    const draft = payload.getAttribute('data-draft');
+    const courier = payload.getAttribute('data-courier');
+    const sales = payload.getAttribute('data-sales');
+    const total = payload.getAttribute('data-total');
+    const count = payload.getAttribute('data-count');
+    const status = payload.getAttribute('data-status');
+    const payment = payload.getAttribute('data-payment');
+
+    // Populate metadata
+    document.getElementById('vOrderID').innerText = 'Order ID: ' + oid;
+    document.getElementById('vOrderDate').innerText = 'Placed on: ' + date;
+    document.getElementById('vDistributor').innerText = dist;
+    document.getElementById('vDraft').innerText = draft;
+    document.getElementById('vCourier').innerText = courier;
+    document.getElementById('vSales').innerText = sales;
+    document.getElementById('vItemCount').innerText = count;
+    document.getElementById('vGrandTotal').innerText = total;
+
+    // Status Styling
+    const statusEl = document.getElementById('vStatus');
+    statusEl.innerText = status;
+    if (status.toLowerCase() === 'delivered') {
+      statusEl.style.color = '#15803d';
+    } else if (status.toLowerCase() === 'processing') {
+      statusEl.style.color = '#1d4ed8';
+    } else if (status.toLowerCase() === 'shipped') {
+      statusEl.style.color = '#7c3aed';
+    } else if (status.toLowerCase() === 'cancelled') {
+      statusEl.style.color = '#dc2626';
+    } else {
+      statusEl.style.color = '#a16207';
+    }
+
+    // Payment Styling
+    const paymentEl = document.getElementById('vPayment');
+    paymentEl.innerText = payment;
+    if (payment.toLowerCase() === 'paid') {
+      paymentEl.style.color = '#15803d';
+    } else if (payment.toLowerCase() === 'partial') {
+      paymentEl.style.color = '#d97706';
+    } else {
+      paymentEl.style.color = '#dc2626';
+    }
+
+    // Populate Itemized List
+    const itemsBody = document.getElementById('vItemsBody');
+    itemsBody.innerHTML = '';
+
+    const itemsSpec = payload.querySelectorAll('.item-spec');
+    itemsSpec.forEach(item => {
+      const name = item.getAttribute('data-name');
+      const qty = item.getAttribute('data-qty');
+      const price = item.getAttribute('data-price');
+      const lTotal = item.getAttribute('data-total');
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-weight: 600; color: #111827;">${name}</td>
+        <td style="text-align: center; font-weight: 700;">${qty}</td>
+        <td style="text-align: right;">${price}</td>
+        <td style="text-align: right; font-weight: 700; color: #111827;">${lTotal}</td>
+      `;
+      itemsBody.appendChild(tr);
+    });
+
+    // Show Modal
+    const overlay = document.getElementById('viewModal');
+    overlay.classList.add('open');
+  }
+
+  // Close View Modal
+  function closeViewModal() {
+    const overlay = document.getElementById('viewModal');
+    overlay.classList.remove('open');
+  }
+
+  // Listen to close on backdrop click
+  document.getElementById('viewModal').addEventListener('click', function(e) {
+    if (e.target === this) closeViewModal();
+  });
+
   function openUpdateModal(orderId, currentStatus, orderLabel) {
     document.getElementById('modalOrderId').value = orderId;
     document.getElementById('modalOrderLabel').textContent = 'Updating status for: ' + orderLabel;

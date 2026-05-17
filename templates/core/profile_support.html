@@ -1,39 +1,682 @@
 {% extends "core/base_distributor.html" %}
 {% block title %}Profile & Support — Hardik International{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ── Page wrapper ── */
+  .ps-wrapper {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding-bottom: 48px;
+  }
+
+  .ps-page-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 4px;
+    letter-spacing: -0.3px;
+  }
+
+  .ps-page-subtitle {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-bottom: 24px;
+  }
+
+  /* ── Main grid ── */
+  .ps-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* ── Cards ── */
+  .ps-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+
+  .ps-card:last-child {
+    margin-bottom: 0;
+  }
+
+  .ps-card-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .ps-card-title-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #eff6ff;
+    color: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+
+  /* ── Form fields ── */
+  .ps-field-group {
+    margin-bottom: 18px;
+  }
+
+  .ps-field-row {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  .ps-field-row.cols-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .ps-field-row.cols-3 {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .ps-label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 6px;
+    letter-spacing: 0.1px;
+    text-transform: uppercase;
+  }
+
+  /* Input with icon prefix */
+  .ps-input-wrap {
+    position: relative;
+  }
+
+  .ps-input-wrap .ps-input-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 0.9rem;
+    pointer-events: none;
+  }
+
+  .ps-input-wrap .ps-input-icon + input,
+  .ps-input-wrap .ps-input-icon + select {
+    padding-left: 36px;
+  }
+
+  .ps-input {
+    width: 100%;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #1e293b;
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .ps-input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+    background: #ffffff;
+  }
+
+  .ps-input[readonly] {
+    background: #f1f5f9;
+    color: #64748b;
+    cursor: not-allowed;
+  }
+
+  /* ── Action buttons ── */
+  .ps-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  .btn-ps-cancel {
+    padding: 9px 22px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #475569;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .btn-ps-cancel:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+  }
+
+  .btn-ps-save {
+    padding: 9px 22px;
+    border-radius: 8px;
+    border: none;
+    background: #2563eb;
+    color: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, transform 0.1s;
+  }
+
+  .btn-ps-save:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+  }
+
+  .btn-ps-save:active {
+    transform: translateY(0);
+  }
+
+  /* ── RIGHT COLUMN ── */
+
+  /* Support & Help */
+  .support-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f5f9;
+    text-decoration: none;
+    color: #1e293b;
+    transition: color 0.15s;
+  }
+
+  .support-item:last-child {
+    border-bottom: none;
+  }
+
+  .support-item:hover {
+    color: #2563eb;
+  }
+
+  .support-item-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .support-item:hover .support-item-icon {
+    background: #eff6ff;
+    color: #2563eb;
+  }
+
+  .support-item-text {
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  /* Quick Stats */
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.875rem;
+  }
+
+  .stat-row:last-child {
+    border-bottom: none;
+  }
+
+  .stat-label {
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .stat-value {
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .badge-active {
+    background: #dcfce7;
+    color: #15803d;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .badge-inactive {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .badge-suspended {
+    background: #fef3c7;
+    color: #92400e;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  /* Need Assistance card */
+  .assistance-card {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #bfdbfe;
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .assistance-icon {
+    width: 52px;
+    height: 52px;
+    background: #ffffff;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+    font-size: 1.4rem;
+    color: #2563eb;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.1);
+  }
+
+  .assistance-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 8px;
+  }
+
+  .assistance-desc {
+    font-size: 0.82rem;
+    color: #475569;
+    margin-bottom: 18px;
+    line-height: 1.55;
+  }
+
+  .btn-assistance {
+    display: inline-block;
+    width: 100%;
+    padding: 10px 20px;
+    background: #2563eb;
+    color: #ffffff;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+
+  .btn-assistance:hover {
+    background: #1d4ed8;
+    color: #ffffff;
+  }
+
+  @media (max-width: 900px) {
+    .ps-grid {
+      grid-template-columns: 1fr;
+    }
+    .ps-field-row.cols-2,
+    .ps-field-row.cols-3 {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row">
-  <div class="col-lg-7">
-    <div class="card">
-      <div class="card-header"><h3 class="card-title">Edit Profile</h3></div>
-      <div class="card-body">
-        <form method="post">
-          {% csrf_token %}
-          <div class="row g-3">
-            <div class="col-md-6"><label class="form-label">Owner Name</label><input type="text" name="owner_name" class="form-control" value="{{ distributor.owner_name }}"></div>
-            <div class="col-md-6"><label class="form-label">Phone</label><input type="text" name="phone" class="form-control" value="{{ distributor.phone }}"></div>
-            <div class="col-md-6"><label class="form-label">Email</label><input type="email" name="email" class="form-control" value="{{ distributor.email }}"></div>
-            <div class="col-12"><label class="form-label">Street Address</label><input type="text" name="street_address" class="form-control" value="{{ distributor.street_address }}"></div>
-            <div class="col-md-4"><label class="form-label">City</label><input type="text" name="city" class="form-control" value="{{ distributor.city }}"></div>
-            <div class="col-md-4"><label class="form-label">State</label><input type="text" name="state" class="form-control" value="{{ distributor.state }}"></div>
-            <div class="col-md-4"><label class="form-label">Pincode</label><input type="text" name="pincode" class="form-control" value="{{ distributor.pincode }}"></div>
-            <div class="col-md-4"><label class="form-label">Bank Name</label><input type="text" name="bank_name" class="form-control" value="{{ distributor.bank_name }}"></div>
-            <div class="col-md-4"><label class="form-label">Account Number</label><input type="text" name="account_number" class="form-control" value="{{ distributor.account_number }}"></div>
-            <div class="col-md-4"><label class="form-label">IFSC Code</label><input type="text" name="ifsc_code" class="form-control" value="{{ distributor.ifsc_code }}"></div>
+<div class="ps-wrapper">
+
+  <h1 class="ps-page-title">Profile & Support</h1>
+  <p class="ps-page-subtitle">Manage your account and get help</p>
+
+  {% for message in messages %}
+    <div class="msg-{{ message.tags }}">{{ message }}</div>
+  {% endfor %}
+
+  <div class="ps-grid">
+
+    <!-- ═══════════════════════════════════════
+         LEFT COLUMN
+    ═══════════════════════════════════════ -->
+    <div>
+
+      <!-- Distributor Information Card -->
+      <div class="ps-card">
+        <div class="ps-card-title">
+          <div class="ps-card-title-icon">
+            <i class="fa-solid fa-user"></i>
           </div>
-          <div class="mt-4"><button type="submit" class="btn btn-primary">Save Changes</button></div>
+          Distributor Information
+        </div>
+
+        <form method="post" id="profileForm">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="profile">
+
+          <!-- Row 1: Distributor ID + Company Name (read-only) -->
+          <div class="ps-field-row cols-2">
+            <div>
+              <label class="ps-label">Distributor ID</label>
+              <div class="ps-input-wrap">
+                <i class="fa-solid fa-id-badge ps-input-icon"></i>
+                <input type="text" class="ps-input" value="{{ distributor.code }}" readonly>
+              </div>
+            </div>
+            <div>
+              <label class="ps-label">Company Name</label>
+              <div class="ps-input-wrap">
+                <i class="fa-solid fa-building ps-input-icon"></i>
+                <input type="text" class="ps-input" value="{{ distributor.business_name }}" readonly>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 2: Contact Person (full width) -->
+          <div class="ps-field-group">
+            <label class="ps-label">Contact Person</label>
+            <div class="ps-input-wrap">
+              <i class="fa-solid fa-user ps-input-icon"></i>
+              <input type="text" name="owner_name" class="ps-input"
+                     value="{{ distributor.owner_name }}" placeholder="Owner / Contact Name">
+            </div>
+          </div>
+
+          <!-- Row 3: Email + Phone -->
+          <div class="ps-field-row cols-2">
+            <div>
+              <label class="ps-label">Email Address</label>
+              <div class="ps-input-wrap">
+                <i class="fa-solid fa-envelope ps-input-icon"></i>
+                <input type="email" name="email" class="ps-input"
+                       value="{{ distributor.email }}" placeholder="email@example.com">
+              </div>
+            </div>
+            <div>
+              <label class="ps-label">Phone Number</label>
+              <div class="ps-input-wrap">
+                <i class="fa-solid fa-phone ps-input-icon"></i>
+                <input type="text" name="phone" class="ps-input"
+                       value="{{ distributor.phone }}" placeholder="+91 00000 00000">
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 4: Business Address (full width) -->
+          <div class="ps-field-group">
+            <label class="ps-label">Business Address</label>
+            <div class="ps-input-wrap">
+              <i class="fa-solid fa-location-dot ps-input-icon"></i>
+              <input type="text" name="street_address" class="ps-input"
+                     value="{{ distributor.street_address }}" placeholder="Street Address">
+            </div>
+          </div>
+
+          <!-- Row 5: City, State, Pincode -->
+          <div class="ps-field-row cols-3">
+            <div>
+              <label class="ps-label">City</label>
+              <input type="text" name="city" class="ps-input"
+                     value="{{ distributor.city }}" placeholder="City">
+            </div>
+            <div>
+              <label class="ps-label">State</label>
+              <input type="text" name="state" class="ps-input"
+                     value="{{ distributor.state }}" placeholder="State">
+            </div>
+            <div>
+              <label class="ps-label">Pincode</label>
+              <input type="text" name="pincode" class="ps-input"
+                     value="{{ distributor.pincode }}" placeholder="000000">
+            </div>
+          </div>
+
+          <!-- Row 6: GST + Drug License -->
+          <div class="ps-field-row cols-2">
+            <div>
+              <label class="ps-label">GST Number</label>
+              <div class="ps-input-wrap">
+                <i class="fa-solid fa-file-invoice ps-input-icon"></i>
+                <input type="text" name="gst_number" class="ps-input"
+                       value="{{ distributor.gst_number }}" placeholder="27AABCU9603R1ZM">
+              </div>
+            </div>
+            <div>
+              <label class="ps-label">Drug License Number</label>
+              <div class="ps-input-wrap">
+                <i class="fa-solid fa-certificate ps-input-icon"></i>
+                <input type="text" name="drug_license_number" class="ps-input"
+                       value="{{ distributor.drug_license_number }}" placeholder="MH-MUM-20/21-XXXXXX">
+              </div>
+            </div>
+          </div>
+
+          <div class="ps-form-actions">
+            <button type="button" class="btn-ps-cancel" onclick="resetProfileForm()">Cancel</button>
+            <button type="submit" class="btn-ps-save">
+              <i class="fa-solid fa-floppy-disk" style="margin-right:6px;"></i>Save Changes
+            </button>
+          </div>
         </form>
+      </div><!-- /Distributor Information Card -->
+
+      <!-- Payment Information Card -->
+      <div class="ps-card">
+        <div class="ps-card-title">
+          <div class="ps-card-title-icon">
+            <i class="fa-solid fa-credit-card"></i>
+          </div>
+          Payment Information
+        </div>
+
+        <form method="post" id="paymentForm">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="payment">
+
+          <!-- Bank Name + Account Number -->
+          <div class="ps-field-row cols-2">
+            <div>
+              <label class="ps-label">Bank Name</label>
+              <div class="ps-input-wrap">
+                <i class="fa-solid fa-landmark ps-input-icon"></i>
+                <input type="text" name="bank_name" class="ps-input"
+                       value="{{ distributor.bank_name }}" placeholder="Bank Name">
+              </div>
+            </div>
+            <div>
+              <label class="ps-label">Account Number</label>
+              <div class="ps-input-wrap">
+                <i class="fa-solid fa-hashtag ps-input-icon"></i>
+                <input type="text" name="account_number" class="ps-input"
+                       value="{{ distributor.account_number }}" placeholder="Account Number">
+              </div>
+            </div>
+          </div>
+
+          <!-- IFSC + Account Holder (business name, read-only) -->
+          <div class="ps-field-row cols-2">
+            <div>
+              <label class="ps-label">IFSC Code</label>
+              <div class="ps-input-wrap">
+                <i class="fa-solid fa-code-branch ps-input-icon"></i>
+                <input type="text" name="ifsc_code" class="ps-input"
+                       value="{{ distributor.ifsc_code }}" placeholder="SBIN0001234">
+              </div>
+            </div>
+            <div>
+              <label class="ps-label">Account Holder Name</label>
+              <div class="ps-input-wrap">
+                <i class="fa-solid fa-user-tie ps-input-icon"></i>
+                <input type="text" class="ps-input" value="{{ distributor.business_name }}" readonly>
+              </div>
+            </div>
+          </div>
+
+          <div class="ps-form-actions">
+            <button type="button" class="btn-ps-cancel" onclick="resetPaymentForm()">Cancel</button>
+            <button type="submit" class="btn-ps-save">
+              <i class="fa-solid fa-floppy-disk" style="margin-right:6px;"></i>Update Payment Info
+            </button>
+          </div>
+        </form>
+      </div><!-- /Payment Information Card -->
+
+    </div><!-- /Left Column -->
+
+    <!-- ═══════════════════════════════════════
+         RIGHT COLUMN
+    ═══════════════════════════════════════ -->
+    <div>
+
+      <!-- Support & Help -->
+      <div class="ps-card">
+        <div class="ps-card-title">
+          <div class="ps-card-title-icon">
+            <i class="fa-solid fa-headset"></i>
+          </div>
+          Support & Help
+        </div>
+
+        <a href="mailto:{{ support_email }}" class="support-item">
+          <div class="support-item-icon"><i class="fa-solid fa-comment-dots"></i></div>
+          <span class="support-item-text">Contact Support</span>
+        </a>
+
+        <a href="tel:{{ support_phone }}" class="support-item">
+          <div class="support-item-icon"><i class="fa-solid fa-phone"></i></div>
+          <span class="support-item-text">Call: {{ support_phone }}</span>
+        </a>
+
+        <a href="mailto:{{ support_email }}" class="support-item">
+          <div class="support-item-icon"><i class="fa-solid fa-envelope"></i></div>
+          <span class="support-item-text">{{ support_email }}</span>
+        </a>
+
+        <div class="support-item" style="cursor:default;">
+          <div class="support-item-icon"><i class="fa-solid fa-clock"></i></div>
+          <span class="support-item-text">{{ support_hours }}</span>
+        </div>
       </div>
-    </div>
-  </div>
-  <div class="col-lg-5">
-    <div class="card">
-      <div class="card-header"><h3 class="card-title">Support</h3></div>
-      <div class="list-group list-group-flush">
-        <div class="list-group-item"><i class="ti ti-phone me-2"></i><strong>Phone:</strong> {{ support_phone }}</div>
-        <div class="list-group-item"><i class="ti ti-mail me-2"></i><strong>Email:</strong> {{ support_email }}</div>
-        <div class="list-group-item"><i class="ti ti-clock me-2"></i><strong>Hours:</strong> {{ support_hours }}</div>
+
+      <!-- Quick Stats -->
+      <div class="ps-card">
+        <div class="ps-card-title">
+          <div class="ps-card-title-icon">
+            <i class="fa-solid fa-chart-bar"></i>
+          </div>
+          Quick Stats
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-label">Account Status</span>
+          {% if distributor.status == 'active' %}
+            <span class="badge-active">Active</span>
+          {% elif distributor.status == 'suspended' %}
+            <span class="badge-suspended">Suspended</span>
+          {% else %}
+            <span class="badge-inactive">Inactive</span>
+          {% endif %}
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-label">Member Since</span>
+          <span class="stat-value">{{ distributor.joined_on|date:"M Y" }}</span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-label">Credit Limit</span>
+          <span class="stat-value">₹{{ distributor.credit_limit|floatformat:0 }}</span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-label">Payment Terms</span>
+          <span class="stat-value">{{ distributor.payment_terms_days }} Days</span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-label">Outstanding</span>
+          <span class="stat-value" style="color:#dc2626;">₹{{ distributor.current_outstanding|floatformat:0 }}</span>
+        </div>
       </div>
-    </div>
-  </div>
-</div>
+
+      <!-- Need Assistance -->
+      <div class="assistance-card">
+        <div class="assistance-icon">
+          <i class="fa-solid fa-headset"></i>
+        </div>
+        <div class="assistance-title">Need Assistance?</div>
+        <div class="assistance-desc">
+          Our support team is available<br>
+          {{ support_hours }}
+        </div>
+        <a href="mailto:{{ support_email }}" class="btn-assistance">
+          <i class="fa-solid fa-arrow-right" style="margin-right:6px;"></i>Get Help Now
+        </a>
+      </div>
+
+    </div><!-- /Right Column -->
+
+  </div><!-- /Grid -->
+</div><!-- /Wrapper -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Store original form values to restore on Cancel
+  const profileInputs = document.querySelectorAll('#profileForm input:not([readonly])');
+  const paymentInputs = document.querySelectorAll('#paymentForm input:not([readonly])');
+
+  const profileOriginals = {};
+  profileInputs.forEach(inp => { profileOriginals[inp.name] = inp.value; });
+
+  const paymentOriginals = {};
+  paymentInputs.forEach(inp => { paymentOriginals[inp.name] = inp.value; });
+
+  function resetProfileForm() {
+    profileInputs.forEach(inp => { inp.value = profileOriginals[inp.name] || ''; });
+  }
+
+  function resetPaymentForm() {
+    paymentInputs.forEach(inp => { inp.value = paymentOriginals[inp.name] || ''; });
+  }
+</script>
 {% endblock %}

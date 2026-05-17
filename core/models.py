@@ -113,17 +113,22 @@ class Distributor(TimestampedModel):
 
     @property
     def current_outstanding(self) -> Decimal:
-        """Sum of all unpaid / overdue / partial invoices."""
-        result = self.invoices.filter(
-            status__in=[Invoice.Status.UNPAID, Invoice.Status.OVERDUE, Invoice.Status.PARTIAL]
-        ).aggregate(total=models.Sum('amount'))
-        return result['total'] or Decimal('0')
+        """
+        Single source of truth for accounts receivable outstanding.
+        Calculated dynamically from the running double-entry ledger balance.
+        """
+        bal = self.latest_ledger_balance
+        return max(Decimal('0'), bal)
 
     @property
     def total_paid(self) -> Decimal:
-        result = self.invoices.filter(
-            status=Invoice.Status.PAID
-        ).aggregate(total=models.Sum('amount'))
+        """
+        Aggregates all credits entered in the ledger of type PAYMENT.
+        Provides a real-world mathematical total of cash/cheque collected from this distributor.
+        """
+        result = self.ledger_entries.filter(
+            entry_type='payment'
+        ).aggregate(total=models.Sum('credit'))
         return result['total'] or Decimal('0')
 
     @property
@@ -436,6 +441,12 @@ class Announcement(TimestampedModel):
     )
     published_at = models.DateField(default=timezone.now)
 
+    # High-fidelity custom fields matching the Figma photo strictly
+    is_featured = models.BooleanField(default=False)
+    tag_label = models.CharField(max_length=50, default='Notice', help_text="e.g. Product Launch, Notice, Event, Alert")
+    severity_label = models.CharField(max_length=50, blank=True, help_text="e.g. High, Medium, Low")
+    icon_type = models.CharField(max_length=50, default='megaphone', help_text="e.g. megaphone, calendar, bell")
+
     class Meta:
         ordering = ['-published_at', '-id']
         verbose_name = 'Announcement'
@@ -455,16 +466,15 @@ class CompanySetting(models.Model):
     Use CompanySetting.objects.get_or_create(pk=1) to retrieve it.
     """
 
-    company_name = models.CharField(max_length=255, default='Hardik International Pvt Ltd')
-    support_email = models.EmailField(default='support@hardikinternational.com')
-    support_phone = models.CharField(max_length=20, default='+91 99999 12345')
-    support_hours = models.CharField(max_length=120, default='Mon–Sat, 10:00 AM to 6:00 PM IST')
-    currency = models.CharField(max_length=10, default='INR')
+    company_name = models.CharField(max_length=255, default='', blank=True)
+    support_email = models.EmailField(default='', blank=True)
+    support_phone = models.CharField(max_length=20, default='', blank=True)
+    support_hours = models.CharField(max_length=120, default='', blank=True)
+    currency = models.CharField(max_length=10, default='', blank=True)
 
     # Security
-    session_timeout_minutes = models.PositiveIntegerField(default=30)
-    password_expiry_days = models.PositiveIntegerField(default=90)
-    two_factor_enabled = models.BooleanField(default=False)
+    session_timeout_minutes = models.PositiveIntegerField(null=True, blank=True)
+    password_expiry_days = models.PositiveIntegerField(null=True, blank=True)
 
     # Notification toggles
     email_notifications = models.BooleanField(default=True)

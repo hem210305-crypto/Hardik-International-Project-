@@ -69,7 +69,14 @@
       <button type="submit" class="btn-login">Admin Sign In</button>
     </form>
 
-    <div class="login-footer">All activities are logged and monitored.</div>
+    <div class="login-footer" style="text-align: center; margin-top: 18px; font-size: 11px; color: #94a3b8; font-weight: 500;">
+      All activities are logged and monitored.
+    </div>
+
+    <!-- Back to Distributor Login Link -->
+    <div style="text-align: center; margin-top: 20px; padding-top: 14px; border-top: 1px solid #e2e8f0; font-size: 13px; color: #64748b;">
+      Distributor Partner? <a href="{% url 'login' %}" style="color: #2563eb; font-weight: 600; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Distributor Portal &rarr;</a>
+    </div>
   </div>
 </div>
 </body>

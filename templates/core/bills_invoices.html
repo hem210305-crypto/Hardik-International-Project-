@@ -1,38 +1,558 @@
 {% extends "core/base_distributor.html" %}
 {% block title %}Bills & Invoices — Hardik International{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ===== Bills & Invoices Premium Layout ===== */
+  .bills-container {
+    margin-top: 12px;
+  }
+
+  /* Metric cards grid layout */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+
+  .metric-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 140px;
+  }
+
+  .metric-label {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #64748b;
+    margin-bottom: 12px;
+  }
+
+  .metric-value {
+    font-size: 26px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  /* Color variations matching the photo */
+  .metric-value.green {
+    color: #22c55e !important; /* Premium Figma bright green */
+  }
+
+  .metric-value.red {
+    color: #ef4444 !important; /* Premium Figma bright red */
+  }
+
+  /* Invoices list card layout */
+  .invoices-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  }
+
+  .invoices-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+
+  .invoices-card-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+  }
+
+  .invoices-card-title i {
+    color: #64748b;
+    font-size: 16px;
+  }
+
+  /* Search Input with Magnifying glass */
+  .search-wrapper {
+    position: relative;
+    width: 280px;
+  }
+
+  .search-wrapper i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 14px;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 9px 16px 9px 38px;
+    border: none;
+    background: #f8fafc;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    outline: none;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+  }
+
+  .search-input::placeholder {
+    color: #94a3b8;
+    font-weight: 500;
+  }
+
+  .search-input:focus {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+  }
+
+  /* Table Custom Stylings */
+  .invoices-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+
+  .invoices-table th {
+    padding: 16px;
+    color: #64748b;
+    font-weight: 600;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .invoices-table td {
+    padding: 18px 16px;
+    color: #475569;
+    font-weight: 500;
+    border-bottom: 1px solid #f8fafc;
+    vertical-align: middle;
+  }
+
+  .invoices-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* Invoice Number Column Style */
+  .col-invoice-num {
+    font-weight: 600 !important;
+    color: #0f172a !important;
+  }
+
+  /* Invoice Amount Column Style */
+  .col-invoice-amount {
+    font-weight: 800 !important;
+    color: #0f172a !important;
+  }
+
+  /* Soft Status Badges matching photo options */
+  .badge-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+  }
+
+  .badge-paid {
+    background: #dcfce7;
+    color: #15803d;
+  }
+
+  .badge-unpaid {
+    background: #dbeafe;
+    color: #2563eb;
+  }
+
+  .badge-overdue {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  .badge-partial {
+    background: #ffedd5;
+    color: #c2410c;
+  }
+
+  /* Action Buttons Column */
+  .actions-cell {
+    display: flex;
+    align-items: center;
+  }
+
+  .btn-action-download {
+    background: transparent;
+    border: none;
+    color: #475569;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+    text-decoration: none;
+  }
+
+  .btn-action-download:hover {
+    color: #0f172a;
+    background: #f8fafc;
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #94a3b8;
+  }
+
+  .empty-state i {
+    font-size: 36px;
+    color: #cbd5e1;
+    margin-bottom: 14px;
+  }
+
+  .empty-state p {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  /* ===== INTERACTIVE MODAL DETAIL WINDOW ===== */
+  .invoice-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  .invoice-modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .invoice-modal-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 36px;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: scale(0.95);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .invoice-modal-overlay.active .invoice-modal-card {
+    transform: scale(1);
+  }
+
+  .modal-head-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+  }
+
+  .modal-head-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 4px;
+  }
+
+  .modal-close-cross {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px;
+    transition: color 0.15s ease;
+  }
+
+  .modal-close-cross:hover {
+    color: #0f172a;
+  }
+
+  .invoice-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 24px;
+    font-size: 13.5px;
+  }
+
+  .meta-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .meta-col div {
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .meta-col span {
+    font-weight: 500;
+    color: #64748b;
+  }
+
+  /* Printable stylesheet */
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    #printArea, #printArea * {
+      visibility: visible;
+    }
+    #printArea {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row mb-3">
-  <div class="col-sm-4"><div class="card text-center"><div class="card-body"><div class="subheader">Total Invoices</div><div class="h1">{{ totals.count }}</div></div></div></div>
-  <div class="col-sm-4"><div class="card text-center"><div class="card-body"><div class="subheader">Total Paid</div><div class="h1 text-success">₹{{ totals.paid }}</div></div></div></div>
-  <div class="col-sm-4"><div class="card text-center"><div class="card-body"><div class="subheader">Outstanding</div><div class="h1 text-danger">₹{{ totals.unpaid }}</div></div></div></div>
-</div>
-<div class="card">
-  <div class="card-header">
-    <h3 class="card-title">Invoices</h3>
-    <div class="card-options">
-      <form class="d-flex gap-2">
-        <input type="text" name="search" class="form-control form-control-sm" placeholder="Search invoice…" value="{{ search }}">
-        <button class="btn btn-sm btn-primary">Search</button>
-      </form>
+<div class="bills-container">
+
+  <!-- Metrics Row matching Figma photo layout -->
+  <div class="metrics-grid">
+    <!-- Total Paid -->
+    <div class="metric-card">
+      <div class="metric-label">Total Paid</div>
+      <div class="metric-value green">₹{{ totals.paid }}</div>
+    </div>
+    <!-- Total Unpaid -->
+    <div class="metric-card">
+      <div class="metric-label">Total Unpaid</div>
+      <div class="metric-value red">₹{{ totals.unpaid }}</div>
+    </div>
+    <!-- Total Invoices -->
+    <div class="metric-card">
+      <div class="metric-label">Total Invoices</div>
+      <div class="metric-value">{{ totals.count }}</div>
     </div>
   </div>
-  <div class="table-responsive">
-    <table class="table table-vcenter card-table">
-      <thead><tr><th>Invoice No.</th><th>Invoice Date</th><th>Due Date</th><th>Amount</th><th>Status</th></tr></thead>
+
+  <!-- Main invoices card layout -->
+  <div class="invoices-card">
+    <div class="invoices-card-header">
+      <h3 class="invoices-card-title">
+        <i class="fa-regular fa-file-lines"></i> All Invoices
+      </h3>
+      
+      <!-- Search Input Box -->
+      <div class="search-wrapper">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="invoiceSearch" class="search-input" placeholder="Search invoices..." oninput="filterInvoices()">
+      </div>
+    </div>
+
+    <!-- Table matching photo exactly -->
+    <table class="invoices-table" id="invoicesTable">
+      <thead>
+        <tr>
+          <th style="width: 22%;">Invoice Number</th>
+          <th style="width: 16%;">Date</th>
+          <th style="width: 16%;">Due Date</th>
+          <th style="width: 18%;">Amount</th>
+          <th style="width: 16%;">Status</th>
+          <th style="width: 12%;">Actions</th>
+        </tr>
+      </thead>
       <tbody>
         {% for inv in invoices %}
-          <tr>
-            <td>{{ inv.invoice_number }}</td>
-            <td>{{ inv.invoice_date }}</td>
-            <td>{{ inv.due_date }}</td>
-            <td>₹{{ inv.amount }}</td>
-            <td><span class="badge bg-{% if inv.status == 'paid' %}success{% elif inv.status == 'overdue' %}danger{% elif inv.status == 'partial' %}warning{% else %}secondary{% endif %}">{{ inv.get_status_display }}</span></td>
+          <tr data-invoice-num="{{ inv.invoice_number|lower }}">
+            <!-- Invoice Number -->
+            <td class="col-invoice-num">{{ inv.invoice_number }}</td>
+            
+            <!-- Date -->
+            <td>{{ inv.invoice_date|date:"d M Y" }}</td>
+            
+            <!-- Due Date -->
+            <td>{{ inv.due_date|date:"d M Y" }}</td>
+            
+            <!-- Amount -->
+            <td class="col-invoice-amount">₹{{ inv.amount }}</td>
+            
+            <!-- Status Badge matching photo options -->
+            <td>
+              {% if inv.status == 'paid' %}
+                <span class="badge-status badge-paid">Paid</span>
+              {% elif inv.status == 'overdue' %}
+                <span class="badge-status badge-overdue">Overdue</span>
+              {% elif inv.status == 'partial' %}
+                <span class="badge-status badge-partial">Partial</span>
+              {% else %}
+                <span class="badge-status badge-unpaid">Unpaid</span>
+              {% endif %}
+            </td>
+            
+            <!-- Actions -->
+            <td>
+              <div class="actions-cell">
+                <button class="btn-action-download" onclick="printInvoice('{{ inv.id }}')" title="Download Invoice">
+                  <i class="fa-solid fa-download"></i> Download
+                </button>
+              </div>
+
+              <!-- Hidden dynamic payload for invoices print loads -->
+              <div id="payload-{{ inv.id }}" style="display: none;"
+                   data-num="{{ inv.invoice_number }}"
+                   data-date="{{ inv.invoice_date|date:'d M Y' }}"
+                   data-due="{{ inv.due_date|date:'d M Y' }}"
+                   data-amount="₹{{ inv.amount }}"
+                   data-status="{% if inv.status == 'paid' %}Paid{% elif inv.status == 'overdue' %}Overdue{% else %}Unpaid{% endif %}">
+              </div>
+            </td>
           </tr>
         {% empty %}
-          <tr><td colspan="5" class="text-center text-muted">No invoices yet.</td></tr>
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <i class="fa-regular fa-file-excel"></i>
+                <p>No invoices available yet.</p>
+              </div>
+            </td>
+          </tr>
         {% endfor %}
       </tbody>
     </table>
+
+  </div>
+
+</div>
+
+<!-- ===== DYNAMIC PRINT OVERLAY FOR INVOICES ===== -->
+<div class="invoice-modal-overlay" id="invoiceModal">
+  <div class="invoice-modal-card" id="printArea">
+    
+    <div class="modal-head-row">
+      <div>
+        <h4 class="modal-head-title" id="mInvNum">Invoice Details</h4>
+        <span style="font-size: 12px; font-weight: 600; color: #64748b;" id="mInvDate">Dated: —</span>
+      </div>
+      <button class="modal-close-cross" onclick="closeInvoiceModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Metadata Section -->
+    <div class="invoice-meta-grid">
+      <div class="meta-col">
+        <div>Billed To: <span>ABC Surgical Ltd. (DIST-2024-001)</span></div>
+        <div>Total Amount: <span id="mInvAmount">₹0.00</span></div>
+      </div>
+      <div class="meta-col">
+        <div>Payment Due Date: <span id="mInvDue">—</span></div>
+        <div>Invoice Status: <span id="mInvStatus">Unpaid</span></div>
+      </div>
+    </div>
+
+    <div style="font-size: 12px; color: #64748b; margin-top: 36px; border-top: 1px solid #f1f5f9; padding-top: 16px; text-align: center;">
+      Hardik International Pvt Ltd • Medical & Surgical Solutions
+    </div>
+
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Real-time client-side search matching photo
+  function filterInvoices() {
+    const query = document.getElementById('invoiceSearch').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('#invoicesTable tbody tr[data-invoice-num]');
+
+    rows.forEach(row => {
+      const invNum = row.getAttribute('data-invoice-num');
+      if (!query || invNum.includes(query)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
+
+  // Open Details Modal and populate fields instantly from payload
+  function openInvoiceModal(invId) {
+    const payload = document.getElementById(`payload-${invId}`);
+    if (!payload) return;
+
+    // Read attributes
+    const num = payload.getAttribute('data-num');
+    const date = payload.getAttribute('data-date');
+    const due = payload.getAttribute('data-due');
+    const amount = payload.getAttribute('data-amount');
+    const status = payload.getAttribute('data-status');
+
+    // Populate metadata
+    document.getElementById('mInvNum').innerText = 'Invoice Number: ' + num;
+    document.getElementById('mInvDate').innerText = 'Date of Invoice: ' + date;
+    document.getElementById('mInvDue').innerText = due;
+    document.getElementById('mInvAmount').innerText = amount;
+    document.getElementById('mInvStatus').innerText = status;
+
+    // Show Modal
+    const overlay = document.getElementById('invoiceModal');
+    overlay.classList.add('active');
+  }
+
+  // Close Modal
+  function closeInvoiceModal() {
+    const overlay = document.getElementById('invoiceModal');
+    overlay.classList.remove('active');
+  }
+
+  // Close on backdrop click
+  document.getElementById('invoiceModal').addEventListener('click', function(e) {
+    if (e.target === this) closeInvoiceModal();
+  });
+
+  // Print Invoice Functionality (Triggers professional print layout of order detail sheet)
+  function printInvoice(invId) {
+    openInvoiceModal(invId);
+    setTimeout(() => {
+      window.print();
+    }, 300);
+  }
+</script>
 {% endblock %}

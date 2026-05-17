@@ -1,97 +1,700 @@
 {% extends "core/base_distributor.html" %}
 {% block title %}Place Order — Hardik International{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ===== Place Order Premium Layout ===== */
+  .order-grid {
+    display: grid;
+    grid-template-columns: 8fr 4fr;
+    gap: 32px;
+    align-items: start;
+    margin-top: 12px;
+  }
+
+  /* Left Side: Product Search & Cards */
+  .products-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* Search & Filter Bar Card */
+  .search-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px 20px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+  }
+
+  .search-input-wrap {
+    position: relative;
+    flex: 1;
+  }
+
+  .search-input-wrap i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    font-size: 16px;
+  }
+
+  .search-box {
+    width: 100%;
+    padding: 11px 16px 11px 42px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #1e293b;
+    background: #f8fafc;
+    outline: none;
+    transition: all 0.2s ease;
+  }
+
+  .search-box:focus {
+    border-color: #2563eb;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+
+  .category-select {
+    padding: 11px 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #475569;
+    background: #f8fafc;
+    outline: none;
+    cursor: pointer;
+    min-width: 160px;
+    transition: all 0.2s ease;
+  }
+
+  .category-select:focus {
+    border-color: #2563eb;
+  }
+
+  /* Product Card List */
+  .product-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .product-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 22px 26px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    transition: all 0.2s ease;
+  }
+
+  .product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+    border-color: #cbd5e1;
+  }
+
+  .product-details {
+    flex: 1;
+  }
+
+  .product-name-txt {
+    font-size: 15.5px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.45;
+    margin-bottom: 8px;
+    word-break: break-word;
+  }
+
+  .product-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .price-tag {
+    font-size: 16px;
+    font-weight: 800;
+    color: #2563eb;
+  }
+
+  .stock-badge {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+
+  .product-action-wrapper {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end;
+    min-width: 140px;
+  }
+
+  /* Button and Qty Controls */
+  .btn-add-to-cart {
+    background: #0f172a;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 9px 18px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .btn-add-to-cart:hover {
+    background: #1e293b;
+    transform: scale(1.02);
+  }
+
+  /* Quantity Selector Container matching photo */
+  .qty-container {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    overflow: hidden;
+    padding: 3px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+
+  .qty-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+  }
+
+  .qty-btn:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+
+  .qty-input {
+    width: 38px;
+    border: none;
+    background: transparent;
+    text-align: center;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #0f172a;
+    outline: none;
+    pointer-events: none;
+  }
+
+  /* Right Side: Sticky Cart Summary */
+  .cart-summary-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+    position: sticky;
+    top: 106px;
+    transition: all 0.3s ease;
+  }
+
+  .cart-header-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 14px;
+  }
+
+  .cart-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 10px;
+    text-align: center;
+    color: #94a3b8;
+  }
+
+  .cart-empty-state i {
+    font-size: 32px;
+    margin-bottom: 12px;
+    color: #cbd5e1;
+  }
+
+  .cart-empty-text {
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+
+  .cart-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-height: 280px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    padding-right: 4px;
+  }
+
+  /* Cart Item Row Styling */
+  .cart-item-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f8fafc;
+  }
+
+  .cart-item-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .cart-item-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .cart-item-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #334155;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+
+  .btn-remove-item {
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 15px;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease;
+  }
+
+  .btn-remove-item:hover {
+    transform: scale(1.2);
+  }
+
+  .cart-item-pricing {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  .item-price-formula {
+    font-weight: 500;
+  }
+
+  .item-line-total {
+    font-weight: 700;
+    color: #334155;
+  }
+
+  /* Totals block */
+  .cart-totals-block {
+    border-top: 1px solid #f1f5f9;
+    padding-top: 16px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .cart-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .total-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+  }
+
+  .total-value-qty {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .total-amt-label {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .total-amt-value {
+    font-size: 20px;
+    font-weight: 800;
+    color: #2563eb;
+  }
+
+  /* Action Buttons */
+  .btn-submit-cart {
+    display: block;
+    width: 100%;
+    background: #2563eb;
+    color: #ffffff;
+    text-align: center;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.15);
+    transition: all 0.2s ease;
+  }
+
+  .btn-submit-cart:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px -1px rgba(37, 99, 235, 0.25);
+  }
+
+  /* Custom scrollbar for cart items */
+  .cart-items-list::-webkit-scrollbar {
+    width: 4px;
+  }
+  .cart-items-list::-webkit-scrollbar-track {
+    background: #f8fafc;
+  }
+  .cart-items-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 2px;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row">
-  <div class="col-lg-8">
-    <div class="card mb-3">
-      <div class="card-header">
-        <h3 class="card-title">Products</h3>
-        <div class="card-options">
-          <form class="d-flex gap-2">
-            <input type="text" name="search" class="form-control form-control-sm" placeholder="Search products…" value="{{ search }}">
-            <button class="btn btn-sm btn-primary">Search</button>
-          </form>
+<div class="order-grid">
+  
+  <!-- LEFT PANEL: Catalog, Search & Cards -->
+  <div class="products-section">
+    
+    <!-- Search Bar card -->
+    <div class="search-card">
+      <div class="search-input-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" class="search-box" placeholder="Search products...">
+      </div>
+      <select id="categoryFilter" class="category-select">
+        <option value="">All Categories</option>
+        {% for cat in categories %}
+          <option value="{{ cat.slug }}">{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Product list -->
+    <div class="product-list" id="productList">
+      {% for product in products %}
+        <div class="product-card" data-id="{{ product.id }}" data-category="{{ product.category.slug }}" data-name="{{ product.name|lower }}">
+          <div class="product-details">
+            <div class="product-name-txt">{{ product.name }}</div>
+            <div class="product-meta-row">
+              <span class="price-tag">₹{{ product.selling_price }} / Nos</span>
+              <span class="stock-badge">Stock: {{ product.stock_quantity }}</span>
+            </div>
+          </div>
+          
+          <div class="product-action-wrapper">
+            {% if product.stock_quantity > 0 %}
+              <!-- Add to Cart / Qty container will be rendered dynamically by JavaScript -->
+              <div class="action-container" id="action-{{ product.id }}">
+                <button class="btn-add-to-cart" onclick="addToCart({{ product.id }})">Add to Cart</button>
+              </div>
+            {% else %}
+              <span style="font-size: 13px; font-weight: 700; color: #dc2626; background: #fee2e2; padding: 6px 12px; border-radius: 6px;">Out of Stock</span>
+            {% endif %}
+          </div>
         </div>
+      {% empty %}
+        <div class="card p-5 text-center text-muted">
+          <i class="fa-solid fa-box-open" style="font-size: 40px; color: #cbd5e1; margin-bottom: 12px;"></i>
+          <p style="font-size: 14.5px; font-weight: 600;">No products found in catalogue.</p>
+        </div>
+      {% endfor %}
+    </div>
+
+  </div>
+
+  <!-- RIGHT PANEL: Sticky Cart Summary -->
+  <div class="cart-summary-container">
+    <div class="cart-summary-card">
+      <div class="cart-header-title">
+        <i class="fa-solid fa-cart-shopping" style="color: #2563eb;"></i> Cart Summary
       </div>
-      <div class="table-responsive">
-        <table class="table table-vcenter card-table">
-          <thead>
-            <tr><th>Product</th><th>SKU</th><th>MRP</th><th>Price</th><th>Stock</th><th>Add</th></tr>
-          </thead>
-          <tbody>
-            {% for product in products %}
-              <tr>
-                <td>{{ product.name }}</td>
-                <td class="text-muted">{{ product.sku }}</td>
-                <td>₹{{ product.mrp }}</td>
-                <td><strong>₹{{ product.selling_price }}</strong></td>
-                <td>
-                  {% if product.stock_quantity == 0 %}
-                    <span class="badge bg-danger">Out</span>
-                  {% elif product.stock_quantity <= product.min_stock_level %}
-                    <span class="badge bg-warning">Low ({{ product.stock_quantity }})</span>
-                  {% else %}
-                    <span class="badge bg-success">{{ product.stock_quantity }}</span>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if product.stock_quantity > 0 %}
-                    <form method="post">
-                      {% csrf_token %}
-                      <input type="hidden" name="action" value="add">
-                      <input type="hidden" name="product_id" value="{{ product.id }}">
-                      <button class="btn btn-sm btn-outline-primary">+ Add</button>
-                    </form>
-                  {% else %}
-                    <span class="text-muted">—</span>
-                  {% endif %}
-                </td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="6" class="text-center text-muted">No products found.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+
+      <!-- Empty State -->
+      <div id="cartEmptyState" class="cart-empty-state">
+        <i class="fa-solid fa-basket-shopping"></i>
+        <div class="cart-empty-text">Your cart is empty</div>
       </div>
+
+      <!-- Active Cart Items List -->
+      <div id="cartActiveState" style="display: none;">
+        <div class="cart-items-list" id="cartItemsList">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div class="cart-totals-block">
+          <div class="cart-total-row">
+            <span class="total-label">Total Items:</span>
+            <span class="total-value-qty" id="cartTotalItems">0</span>
+          </div>
+          <div class="cart-total-row">
+            <span class="total-amt-label">Total Amount:</span>
+            <span class="total-amt-value" id="cartTotalAmount">₹0.00</span>
+          </div>
+        </div>
+
+        <a href="{% url 'checkout' %}" class="btn-submit-cart">Place Order</a>
+      </div>
+
     </div>
   </div>
 
-  <!-- Cart -->
-  <div class="col-lg-4">
-    <div class="card">
-      <div class="card-header"><h3 class="card-title">Cart ({{ cart_count }} items)</h3></div>
-      <div class="list-group list-group-flush">
-        {% for item in cart_items %}
-          <div class="list-group-item">
-            <div class="row align-items-center">
-              <div class="col">
-                <strong>{{ item.product.name }}</strong>
-                <div class="text-muted small">₹{{ item.product.selling_price }} × {{ item.quantity }}</div>
-              </div>
-              <div class="col-auto">₹{{ item.line_total }}</div>
-              <div class="col-auto">
-                <form method="post">
-                  {% csrf_token %}
-                  <input type="hidden" name="action" value="remove">
-                  <input type="hidden" name="product_id" value="{{ item.product.id }}">
-                  <button class="btn btn-sm btn-outline-danger">✕</button>
-                </form>
-              </div>
-            </div>
-          </div>
-        {% empty %}
-          <div class="list-group-item text-muted text-center">Cart is empty.</div>
-        {% endfor %}
-      </div>
-      {% if cart_items %}
-        <div class="card-footer">
-          <div class="d-flex justify-content-between mb-2">
-            <strong>Total</strong><strong>₹{{ cart_total }}</strong>
-          </div>
-          <a href="{% url 'checkout' %}" class="btn btn-primary w-100">Proceed to Checkout</a>
-        </div>
-      {% endif %}
-    </div>
-  </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Initial state passed from Django
+  const initialCart = {
+    {% for item in cart_items %}
+      "{{ item.product.id }}": {{ item.quantity }},
+    {% endfor %}
+  };
+
+  // Keep track of active quantities
+  let cartState = { ...initialCart };
+  const csrfToken = "{{ csrf_token }}";
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // 1. Setup Search & Filter Event Listeners
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    
+    if (searchInput) searchInput.addEventListener('input', filterProducts);
+    if (categoryFilter) categoryFilter.addEventListener('change', filterProducts);
+
+    // 2. Initialize UI with existing cart items
+    updateUI();
+  });
+
+  // Client-Side Search and Filter Logic
+  function filterProducts() {
+    const query = document.getElementById('searchInput').value.toLowerCase().trim();
+    const cat = document.getElementById('categoryFilter').value;
+    const cards = document.querySelectorAll('.product-card');
+
+    cards.forEach(card => {
+      const name = card.getAttribute('data-name');
+      const category = card.getAttribute('data-category');
+
+      const matchesSearch = !query || name.includes(query);
+      const matchesCategory = !cat || category === cat;
+
+      if (matchesSearch && matchesCategory) {
+        card.style.display = 'flex';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  // Update complete UI states (Add buttons, quantity containers, right summary panel)
+  function updateUI(cartData = null) {
+    if (cartData) {
+      cartState = {};
+      cartData.cart_items.forEach(item => {
+        cartState[item.product_id] = item.quantity;
+      });
+    }
+
+    // A. Update all product cards action buttons
+    const productCards = document.querySelectorAll('.product-card');
+    productCards.forEach(card => {
+      const pid = card.getAttribute('data-id');
+      const qty = cartState[pid] || 0;
+      const actionContainer = document.getElementById(`action-${pid}`);
+
+      if (actionContainer) {
+        if (qty > 0) {
+          actionContainer.innerHTML = `
+            <div class="qty-container">
+              <button class="qty-btn" onclick="updateQty(${pid}, ${qty - 1})">-</button>
+              <input type="text" class="qty-input" value="${qty}">
+              <button class="qty-btn" onclick="updateQty(${pid}, ${qty + 1})">+</button>
+            </div>
+          `;
+        } else {
+          actionContainer.innerHTML = `
+            <button class="btn-add-to-cart" onclick="addToCart(${pid})">Add to Cart</button>
+          `;
+        }
+      }
+    });
+
+    // B. Rebuild Right Cart Summary Card
+    if (cartData) {
+      renderCartSummary(cartData.cart_items, cartData.cart_count, cartData.cart_total);
+    } else {
+      // If first load without cartData, fetch it
+      fetchCartSummary();
+    }
+  }
+
+  // Fetch full details of the cart from the backend
+  function fetchCartSummary() {
+    fetch('{% url "place_order" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': csrfToken
+      },
+      body: 'action=fetch&ajax=true'
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        renderCartSummary(data.cart_items, data.cart_count, data.cart_total);
+      }
+    });
+  }
+
+  // Render the items inside the Cart Summary Panel
+  function renderCartSummary(items, count, total) {
+    const emptyState = document.getElementById('cartEmptyState');
+    const activeState = document.getElementById('cartActiveState');
+    const itemsList = document.getElementById('cartItemsList');
+    const totalItems = document.getElementById('cartTotalItems');
+    const totalAmount = document.getElementById('cartTotalAmount');
+
+    if (count === 0) {
+      emptyState.style.display = 'flex';
+      activeState.style.display = 'none';
+      return;
+    }
+
+    emptyState.style.display = 'none';
+    activeState.style.display = 'block';
+    
+    // Clear list and build
+    itemsList.innerHTML = '';
+    items.forEach(item => {
+      // Format number to INR currency
+      const formattedLineTotal = parseFloat(item.line_total).toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+      const formattedPrice = parseFloat(item.product_price).toLocaleString('en-IN');
+
+      const row = document.createElement('div');
+      row.className = 'cart-item-row';
+      row.innerHTML = `
+        <div class="cart-item-meta">
+          <span class="cart-item-name">${item.product_name}</span>
+          <button class="btn-remove-item" onclick="removeItem(${item.product_id})" title="Remove item">
+            <i class="fa-solid fa-circle-xmark"></i>
+          </button>
+        </div>
+        <div class="cart-item-pricing">
+          <span class="item-price-formula">${item.quantity} × ₹${formattedPrice}</span>
+          <span class="item-line-total">₹${formattedLineTotal}</span>
+        </div>
+      `;
+      itemsList.appendChild(row);
+    });
+
+    totalItems.innerText = count;
+    totalAmount.innerText = '₹' + parseFloat(total).toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  // AJAX Actions
+  function addToCart(productId) {
+    postCartAction('add', productId, 1);
+  }
+
+  function updateQty(productId, quantity) {
+    postCartAction('update', productId, quantity);
+  }
+
+  function removeItem(productId) {
+    postCartAction('remove', productId, 0);
+  }
+
+  function postCartAction(action, productId, quantity) {
+    const params = new URLSearchParams();
+    params.append('action', action);
+    params.append('product_id', productId);
+    params.append('quantity', quantity);
+    params.append('ajax', 'true');
+
+    fetch('{% url "place_order" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': csrfToken
+      },
+      body: params.toString()
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        updateUI(data);
+      }
+    })
+    .catch(err => console.error('Error modifying cart:', err));
+  }
+</script>
 {% endblock %}

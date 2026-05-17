@@ -1,24 +1,324 @@
 {% extends "core/base_distributor.html" %}
 {% block title %}Announcements — Hardik International{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc;
+  }
+
+  .announcements-wrapper {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding-bottom: 40px;
+  }
+
+  /* ---- FEATURED CARD ---- */
+  .featured-ann-card {
+    background: linear-gradient(135deg, #eff6ff 0%, #e0efff 100%);
+    border: 1px solid #bfdbfe;
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 28px;
+    box-shadow: 0 4px 20px -2px rgba(37, 99, 235, 0.04);
+    display: flex;
+    gap: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .featured-icon-circle {
+    background-color: #2563eb;
+    color: #ffffff;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+  }
+
+  .featured-content {
+    flex-grow: 1;
+  }
+
+  .featured-badge-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .featured-title {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin-bottom: 10px;
+    line-height: 1.35;
+  }
+
+  .featured-desc {
+    font-size: 0.95rem;
+    color: #475569;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .featured-date {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #64748b;
+  }
+
+  .featured-img-container {
+    text-align: center;
+    margin-top: 24px;
+  }
+
+  .featured-img {
+    max-height: 180px;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 15px rgba(0,0,0,0.06));
+    transition: transform 0.3s ease;
+  }
+
+  .featured-img:hover {
+    transform: scale(1.02);
+  }
+
+  /* ---- STANDARD ANNOUNCEMENT CARD ---- */
+  .ann-row-card {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.01);
+    display: flex;
+    gap: 20px;
+    transition: all 0.2s ease;
+  }
+
+  .ann-row-card:hover {
+    box-shadow: 0 4px 12px -2px rgba(0,0,0,0.04);
+    border-color: #cbd5e1;
+  }
+
+  /* Soft Circular Icons */
+  .ann-icon-circle {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  /* Specific icon styles matching mockup categories */
+  .icon-megaphone {
+    background-color: #eff6ff;
+    color: #2563eb;
+  }
+
+  .icon-calendar {
+    background-color: #faf5ff;
+    color: #9333ea;
+  }
+
+  .icon-bell {
+    background-color: #fff7ed;
+    color: #ea580c;
+  }
+
+  .card-main-content {
+    flex-grow: 1;
+  }
+
+  .card-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+
+  .card-ann-title {
+    font-size: 1.08rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .card-desc {
+    font-size: 0.9rem;
+    color: #475569;
+    line-height: 1.55;
+    margin-bottom: 12px;
+  }
+
+  .card-date-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #64748b;
+  }
+
+  .card-date-row i {
+    font-size: 0.95rem;
+    color: #94a3b8;
+  }
+
+  /* ---- FIGMA PILLS BADGES ---- */
+  .pill-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.1px;
+  }
+
+  .badge-featured {
+    background-color: #2563eb;
+    color: #ffffff;
+  }
+
+  .badge-product-launch {
+    background-color: #d1fae5;
+    color: #065f46;
+  }
+
+  .badge-notice {
+    background-color: #dbeafe;
+    color: #1e40af;
+  }
+
+  .badge-event {
+    background-color: #f3e8ff;
+    color: #6b21a8;
+  }
+
+  .badge-alert {
+    background-color: #fee2e2;
+    color: #b91c1c;
+  }
+
+  .badge-high {
+    background-color: #fee2e2;
+    color: #b91c1c;
+  }
+
+  .badge-medium {
+    background-color: #fef3c7;
+    color: #92400e;
+  }
+
+  /* Responsive styles */
+  @media(max-width: 768px) {
+    .featured-ann-card {
+      flex-direction: column;
+      padding: 24px;
+    }
+    .ann-row-card {
+      flex-direction: column;
+      padding: 18px;
+    }
+    .card-header-row {
+      flex-direction: column;
+      gap: 8px;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row row-cards">
+<div class="announcements-wrapper">
+  
   {% for ann in announcements %}
-    <div class="col-md-6 col-lg-4">
-      <div class="card">
-        <div class="card-header">
-          <span class="badge bg-{% if ann.category == 'urgent' %}danger{% elif ann.category == 'important' %}warning{% elif ann.category == 'maintenance' %}secondary{% else %}info{% endif %} me-2">
-            {{ ann.get_category_display }}
-          </span>
-          <h4 class="card-title mb-0">{{ ann.title }}</h4>
+    {% if ann.is_featured %}
+      <!-- FEATURED HERO CARD (Megaphone + Image + Gradients) -->
+      <div class="featured-ann-card">
+        <div class="featured-icon-circle">
+          <i class="ti ti-speakerphone"></i>
         </div>
-        <div class="card-body">
-          <p class="text-muted mb-0">{{ ann.content }}</p>
+        <div class="featured-content">
+          <div class="featured-badge-row">
+            <span class="pill-badge badge-featured">Featured</span>
+            {% if ann.tag_label %}
+              <span class="pill-badge badge-product-launch">{{ ann.tag_label }}</span>
+            {% endif %}
+          </div>
+          <h3 class="featured-title">{{ ann.title }}</h3>
+          <p class="featured-desc">{{ ann.content }}</p>
+          <div class="featured-date">
+            {{ ann.published_at|date:"j M Y" }}
+          </div>
+          
+          {% if ann.image_url %}
+            <div class="featured-img-container">
+              <img src="{{ ann.image_url }}" alt="Featured Implant Plate" class="featured-img img-fluid">
+            </div>
+          {% endif %}
         </div>
-        <div class="card-footer text-muted">{{ ann.published_at }}</div>
       </div>
-    </div>
+    {% else %}
+      <!-- STANDARD ROW CARD -->
+      <div class="ann-row-card">
+        <div class="ann-icon-circle {% if ann.icon_type == 'calendar' %}icon-calendar{% elif ann.icon_type == 'bell' %}icon-bell{% else %}icon-megaphone{% endif %}">
+          {% if ann.icon_type == 'calendar' %}
+            <i class="ti ti-calendar"></i>
+          {% elif ann.icon_type == 'bell' %}
+            <i class="ti ti-bell"></i>
+          {% else %}
+            <i class="ti ti-speakerphone"></i>
+          {% endif %}
+        </div>
+        <div class="card-main-content">
+          <div class="card-header-row">
+            <h4 class="card-ann-title">{{ ann.title }}</h4>
+            <div class="d-flex gap-2">
+              {% if ann.tag_label %}
+                <span class="pill-badge {% if ann.tag_label == 'Event' %}badge-event{% elif ann.tag_label == 'Alert' %}badge-alert{% elif ann.tag_label == 'Product Launch' %}badge-product-launch{% else %}badge-notice{% endif %}">
+                  {{ ann.tag_label }}
+                </span>
+              {% endif %}
+              {% if ann.severity_label %}
+                <span class="pill-badge {% if ann.severity_label == 'High' %}badge-high{% else %}badge-medium{% endif %}">
+                  {{ ann.severity_label }}
+                </span>
+              {% endif %}
+            </div>
+          </div>
+          <p class="card-desc">{{ ann.content }}</p>
+          <div class="card-date-row">
+            <i class="ti ti-calendar"></i>
+            <span>{{ ann.published_at|date:"j M Y" }}</span>
+          </div>
+        </div>
+      </div>
+    {% endif %}
   {% empty %}
-    <div class="col-12 text-center text-muted py-5">No announcements at this time.</div>
+    <div class="card p-5 text-center text-muted border-0 shadow-sm rounded-3">
+      <i class="ti ti-speakerphone fs-1 mb-3 text-muted"></i>
+      <h4 class="fw-bold">No Announcements Published</h4>
+      <p class="small mb-0">Check back later for company news and event updates.</p>
+    </div>
   {% endfor %}
+
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 {% endblock %}

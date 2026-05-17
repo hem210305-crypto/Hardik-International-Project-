@@ -1,31 +1,595 @@
 {% extends "core/base_distributor.html" %}
 {% block title %}Ledger & Payments — Hardik International{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc;
+  }
+
+  /* Red alert outstanding banner */
+  .outstanding-banner {
+    background-color: #fdf2f2;
+    border: 1px solid #fde2e2;
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  }
+
+  .banner-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .banner-label-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #991b1b;
+  }
+
+  .banner-label-row i {
+    font-size: 1.1rem;
+    color: #dc2626;
+  }
+
+  .banner-amount {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #b91c1c;
+    font-family: 'Inter', monospace;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin: 4px 0;
+  }
+
+  .banner-notice {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #b91c1c;
+  }
+
+  .btn-pay-red {
+    background-color: #dc2626;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 12px 28px;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+    transition: all 0.2s;
+  }
+
+  .btn-pay-red:hover {
+    background-color: #b91c1c;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.35);
+  }
+
+  /* Metric cards */
+  .ledger-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .metric-card {
+    background-color: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.01);
+  }
+
+  .metric-label-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.83rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+  }
+
+  .metric-icon-debit { color: #dc2626; font-size: 1.1rem; }
+  .metric-icon-credit { color: #16a34a; font-size: 1.1rem; }
+  .metric-icon-neutral { color: #64748b; font-size: 1.1rem; }
+
+  .metric-val {
+    font-size: 1.8rem;
+    font-weight: 800;
+    font-family: 'Inter', monospace;
+  }
+
+  .metric-val.debit-val { color: #b91c1c; }
+  .metric-val.credit-val { color: #15803d; }
+  .metric-val.neutral-val { color: #0f172a; }
+
+  /* Ledger Table Card */
+  .ledger-statement-card {
+    background-color: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.01);
+  }
+
+  .card-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .card-title-main {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .month-select {
+    padding: 8px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background-color: #f8fafc;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #334155;
+    outline: none;
+  }
+
+  .btn-export-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-export-outline:hover {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+  }
+
+  /* Ledger Table */
+  .ledger-table-wrap {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .ledger-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    text-align: left;
+  }
+
+  .ledger-table th {
+    background-color: #f8fafc;
+    padding: 14px 18px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .ledger-table td {
+    padding: 16px 18px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+  }
+
+  .ledger-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .ledger-table tr:hover td {
+    background-color: #fafbfc;
+  }
+
+  /* Type Badges */
+  .badge-type {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .badge-debit {
+    background-color: #fef2f2;
+    color: #b91c1c;
+  }
+
+  .badge-credit {
+    background-color: #f0fdf4;
+    color: #15803d;
+  }
+
+  .amount-val-col {
+    font-weight: 700;
+    font-family: 'Inter', monospace;
+  }
+
+  .amount-val-col.debit-val {
+    color: #b91c1c;
+  }
+
+  .amount-val-col.credit-val {
+    color: #15803d;
+  }
+
+  .balance-val-col {
+    font-weight: 700;
+    color: #0f172a;
+    font-family: 'Inter', monospace;
+  }
+
+  /* Modal styling */
+  .payment-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+  }
+
+  .payment-modal.open {
+    display: flex;
+  }
+
+  .payment-card {
+    background-color: #fff;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 520px;
+    padding: 32px;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+    animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes modalSlideUp {
+    from { transform: translateY(24px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .bank-details-box {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 0.85rem;
+    color: #334155;
+    margin-bottom: 20px;
+  }
+
+  .bank-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .bank-row:last-child {
+    border-bottom: none;
+  }
+
+  .bank-row strong {
+    color: #0f172a;
+  }
+
+  @media (max-width: 768px) {
+    .ledger-metrics-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .outstanding-banner {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 20px;
+    }
+    .btn-pay-red {
+      width: 100%;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row mb-3">
-  <div class="col-sm-4"><div class="card text-center"><div class="card-body"><div class="subheader">Outstanding</div><div class="h1 text-danger">₹{{ summary.outstanding }}</div></div></div></div>
-  <div class="col-sm-4"><div class="card text-center"><div class="card-body"><div class="subheader">Total Paid</div><div class="h1 text-success">₹{{ summary.paid }}</div></div></div></div>
-  <div class="col-sm-4"><div class="card text-center"><div class="card-body"><div class="subheader">Current Balance</div><div class="h1">₹{{ summary.balance }}</div></div></div></div>
-</div>
-<div class="card">
-  <div class="card-header"><h3 class="card-title">Ledger Entries</h3></div>
-  <div class="table-responsive">
-    <table class="table table-vcenter card-table">
-      <thead><tr><th>Date</th><th>Description</th><th>Reference</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead>
-      <tbody>
-        {% for entry in ledger_entries %}
+<div class="container-fluid p-0">
+
+  <!-- Soft Red Outstanding Banner -->
+  <div class="outstanding-banner">
+    <div class="banner-left">
+      <div class="banner-label-row">
+        <i class="ti ti-alert-triangle"></i>
+        <span>Current Outstanding Amount</span>
+      </div>
+      <div class="banner-amount">₹{{ summary.outstanding }}</div>
+      <div class="banner-notice">Please ensure timely payment to avoid service interruptions</div>
+    </div>
+    <div class="banner-right">
+      <button class="btn btn-pay-red" onclick="openPaymentModal()">
+        Make Payment
+      </button>
+    </div>
+  </div>
+
+  <!-- Grid of 3 Summary Cards -->
+  <div class="ledger-metrics-grid">
+    
+    <!-- Card 1: Total Debits -->
+    <div class="metric-card">
+      <div class="metric-label-row">
+        <i class="ti ti-arrow-down-right metric-icon-debit"></i>
+        <span>Total Debits</span>
+      </div>
+      <div class="metric-val debit-val">₹{{ summary.total_debits }}</div>
+    </div>
+
+    <!-- Card 2: Total Credits -->
+    <div class="metric-card">
+      <div class="metric-label-row">
+        <i class="ti ti-arrow-up-right metric-icon-credit"></i>
+        <span>Total Credits</span>
+      </div>
+      <div class="metric-val credit-val">₹{{ summary.total_credits }}</div>
+    </div>
+
+    <!-- Card 3: Net Balance -->
+    <div class="metric-card">
+      <div class="metric-label-row">
+        <i class="ti ti-receipt-2 metric-icon-neutral"></i>
+        <span>Net Balance</span>
+      </div>
+      <div class="metric-val neutral-val">₹{{ summary.net_balance }}</div>
+    </div>
+
+  </div>
+
+  <!-- Ledger Table Section -->
+  <div class="ledger-statement-card">
+    <div class="card-header-flex">
+      <h3 class="card-title-main">Ledger Statement</h3>
+      
+      <div class="header-actions">
+        <!-- Date filtering dropdown -->
+        <select class="month-select" id="monthSelector" onchange="filterLedgerByMonth()">
+          <option value="all" selected>All Transactions</option>
+          <option value="2026-05">May 2026</option>
+          <option value="2026-04">April 2026</option>
+          <option value="2026-03">March 2026</option>
+          <option value="2026-02">February 2026</option>
+          <option value="2026-01">January 2026</option>
+          <option value="2025-12">December 2025</option>
+        </select>
+        
+        <!-- Export to CSV trigger -->
+        <button class="btn-export-outline" onclick="exportLedgerToCSV()">
+          <i class="ti ti-download"></i> Export
+        </button>
+      </div>
+    </div>
+
+    <!-- Ledger Table Layout -->
+    <div class="ledger-table-wrap">
+      <table class="ledger-table" id="ledgerTable">
+        <thead>
           <tr>
-            <td>{{ entry.entry_date }}</td>
-            <td>{{ entry.description }}</td>
-            <td>{{ entry.reference }}</td>
-            <td class="text-danger">{% if entry.debit %}₹{{ entry.debit }}{% endif %}</td>
-            <td class="text-success">{% if entry.credit %}₹{{ entry.credit }}{% endif %}</td>
-            <td><strong>₹{{ entry.balance }}</strong></td>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Reference</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Balance</th>
           </tr>
-        {% empty %}
-          <tr><td colspan="6" class="text-center text-muted">No ledger entries yet.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {% for entry in ledger_entries %}
+            <tr data-date="{{ entry.entry_date|date:'Y-m' }}">
+              <td style="font-weight: 500;">{{ entry.entry_date|date:"d M Y" }}</td>
+              <td>{{ entry.description }}</td>
+              <td style="font-family: 'Inter', monospace; font-size: 0.82rem;">{{ entry.reference }}</td>
+              <td>
+                {% if entry.entry_type == 'payment' or entry.entry_type == 'credit' %}
+                  <span class="badge-type badge-credit">Credit</span>
+                {% else %}
+                  <span class="badge-type badge-debit">Debit</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if entry.entry_type == 'payment' or entry.entry_type == 'credit' %}
+                  <span class="amount-val-col credit-val">+₹{{ entry.credit }}</span>
+                {% else %}
+                  <span class="amount-val-col debit-val">-₹{{ entry.debit }}</span>
+                {% endif %}
+              </td>
+              <td class="balance-val-col">₹{{ entry.balance }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center py-5 text-muted">
+                <i class="ti ti-receipt-2 fs-1 d-block mb-2"></i>
+                No statement records found for your account.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Interactive Payment Info Drawer Modal -->
+<div class="payment-modal" id="payModal">
+  <div class="payment-card">
+    <div class="d-flex justify-content-between align-items-start mb-4">
+      <div>
+        <h3 class="fw-bold text-dark mb-1" style="font-size: 1.25rem;">Initiate Outstanding Payment</h3>
+        <p class="text-muted mb-0" style="font-size: 0.8rem;">Select one of our payment modes to settle your ledger balance.</p>
+      </div>
+      <button onclick="closePaymentModal()" style="background: none; border: none; font-size: 1.3rem; color: #94a3b8; cursor: pointer; padding: 0;"><i class="ti ti-x"></i></button>
+    </div>
+
+    <!-- Mode 1: Bank transfer Details -->
+    <h5 class="fw-bold text-dark mb-2" style="font-size: 0.9rem;"><i class="ti ti-building-bank text-primary me-1"></i> Bank Account Transfer (NEFT/RTGS)</h5>
+    <div class="bank-details-box">
+      <div class="bank-row">
+        <span>Beneficiary Name</span>
+        <strong>Hardik International Pvt Ltd</strong>
+      </div>
+      <div class="bank-row">
+        <span>Account Number</span>
+        <strong>50200084729103</strong>
+      </div>
+      <div class="bank-row">
+        <span>Bank Name</span>
+        <strong>HDFC Bank Ltd</strong>
+      </div>
+      <div class="bank-row">
+        <span>IFSC Code</span>
+        <strong>HDFC0000120</strong>
+      </div>
+      <div class="bank-row">
+        <span>Branch Location</span>
+        <strong>Noida Sector 63, UP</strong>
+      </div>
+    </div>
+
+    <!-- Mode 2: UPI Transfer -->
+    <h5 class="fw-bold text-dark mb-2" style="font-size: 0.9rem;"><i class="ti ti-qrcode text-success me-1"></i> UPI Transfer QR</h5>
+    <div class="d-flex align-items-center gap-3 p-3 rounded-3 mb-4" style="background-color: #f0fdf4; border: 1px dashed #bbf7d0;">
+      <!-- Generate QR mockup dynamically -->
+      <div style="background: #fff; padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; width: 68px; height: 68px; display: flex; align-items: center; justify-content: center;">
+        <i class="ti ti-qrcode fs-1 text-success"></i>
+      </div>
+      <div>
+        <div style="font-size: 0.85rem; font-weight: 700; color: #16a34a;">Scan or Send to VPA ID</div>
+        <div style="font-size: 0.9rem; font-weight: 800; color: #14532d; font-family: monospace;">hardik@upi</div>
+        <div class="text-muted" style="font-size: 0.75rem; margin-top: 2px;">Instantly reconciled via integrated IMPS gateways.</div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-secondary flex-grow-1 border-light-subtle rounded-3 py-2" onclick="closePaymentModal()" style="font-size: 0.88rem; font-weight: 600;">Close</button>
+      <button class="btn btn-success flex-grow-1 rounded-3 py-2" onclick="triggerMockPaymentSuccess()" style="font-size: 0.88rem; font-weight: 700; background-color: #16a34a; border: none;">I Have Paid</button>
+    </div>
   </div>
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Open Payment Instructions modal
+  function openPaymentModal() {
+    document.getElementById('payModal').classList.add('open');
+  }
+
+  // Close Payment modal
+  function closePaymentModal() {
+    document.getElementById('payModal').classList.remove('open');
+  }
+
+  // Backdrop close click listener
+  document.getElementById('payModal').addEventListener('click', function(e) {
+    if (e.target === this) closePaymentModal();
+  });
+
+  // Action feedback alert
+  function triggerMockPaymentSuccess() {
+    alert("Thank you! Payment notification sent. Settle request was successfully registered with our administration desk and is waiting verification.");
+    closePaymentModal();
+  }
+
+  // Client-Side Month Selector filter logic
+  function filterLedgerByMonth() {
+    const val = document.getElementById('monthSelector').value;
+    const rows = document.querySelectorAll('#ledgerTable tbody tr[data-date]');
+    
+    rows.forEach(row => {
+      const rowMonth = row.getAttribute('data-date');
+      if (val === 'all' || rowMonth === val) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
+
+  // Client-Side CSV Ledger Statement Exporter
+  function exportLedgerToCSV() {
+    const table = document.getElementById('ledgerTable');
+    let csv = [];
+    
+    // Header columns
+    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.innerText);
+    csv.push(headers.join(','));
+    
+    // Rows columns
+    const rows = table.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+      if (row.style.display !== 'none') {
+        const cols = Array.from(row.querySelectorAll('td')).map(td => {
+          let txt = td.innerText.replace(/"/g, '""');
+          return `"${txt}"`;
+        });
+        if (cols.length > 0) csv.push(cols.join(','));
+      }
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8," + csv.join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Ledger_Statement_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // Auto-run filter on page load matching Jan 2026 in selector
+  document.addEventListener('DOMContentLoaded', filterLedgerByMonth);
+</script>
 {% endblock %}

@@ -1,49 +1,768 @@
 {% extends "core/base_distributor.html" %}
 {% block title %}Checkout — Hardik International{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ===== Checkout Premium Layout ===== */
+  .checkout-grid {
+    display: grid;
+    grid-template-columns: 7.5fr 4.5fr;
+    gap: 32px;
+    align-items: start;
+    margin-top: 12px;
+  }
+
+  /* Back Button */
+  .btn-back-to-cart {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease;
+    margin-bottom: 20px;
+  }
+
+  .btn-back-to-cart:hover {
+    background: #f8fafc;
+    color: #0f172a;
+    border-color: #94a3b8;
+  }
+
+  /* Checkout Heading Override */
+  .checkout-heading-wrap {
+    margin-bottom: 24px;
+  }
+
+  .checkout-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 4px;
+  }
+
+  .checkout-subtitle {
+    font-size: 13.5px;
+    color: #64748b;
+  }
+
+  /* Left Side: Order Information Form */
+  .form-section-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+  }
+
+  .form-card-title {
+    font-size: 15.5px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Form Layout Grid */
+  .form-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 24px;
+    margin-bottom: 24px;
+  }
+
+  .checkout-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .checkout-form-group.full-width {
+    grid-column: span 2;
+  }
+
+  .checkout-form-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #334155;
+  }
+
+  .checkout-form-label span {
+    color: #dc2626;
+  }
+
+  /* Input fields styling */
+  .checkout-input-wrap {
+    position: relative;
+  }
+
+  .checkout-input-wrap i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    font-size: 15px;
+    pointer-events: none;
+  }
+
+  .checkout-input {
+    width: 100%;
+    padding: 11px 16px 11px 40px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #1e293b;
+    background: #f8fafc;
+    outline: none;
+    transition: all 0.2s ease;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .checkout-input:focus {
+    border-color: #2563eb;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+
+  .checkout-textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #1e293b;
+    background: #f8fafc;
+    outline: none;
+    resize: none;
+    transition: all 0.2s ease;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .checkout-textarea:focus {
+    border-color: #2563eb;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+
+  /* Info Note Banner */
+  .info-note-banner {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #1e40af;
+    line-height: 1.5;
+  }
+
+  /* Right Side: Order Summary Card */
+  .summary-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+  }
+
+  .summary-title {
+    font-size: 15.5px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 14px;
+  }
+
+  .checkout-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 18px;
+    padding-right: 4px;
+  }
+
+  .checkout-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    border-bottom: 1px solid #f8fafc;
+    padding-bottom: 8px;
+  }
+
+  .checkout-item-name {
+    font-weight: 600;
+    color: #334155;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+  }
+
+  .checkout-item-qtyprice {
+    font-size: 11px;
+    color: #64748b;
+    margin-left: 8px;
+  }
+
+  .checkout-item-total {
+    font-weight: 700;
+    color: #334155;
+  }
+
+  .checkout-totals-block {
+    border-top: 1px solid #f1f5f9;
+    padding-top: 14px;
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .checkout-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .total-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+  }
+
+  .total-value-qty {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .total-amt-label {
+    font-size: 14px;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .total-amt-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: #2563eb;
+  }
+
+  /* Dynamic Live Order Preview Green Box matching photo */
+  .live-preview-box {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .preview-title {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #166534;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .preview-line {
+    font-size: 13px;
+    font-weight: 700;
+    color: #15803d;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Confirm Button */
+  .btn-confirm-order {
+    width: 100%;
+    background: #16a34a;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 14.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.15);
+    transition: all 0.2s ease;
+  }
+
+  .btn-confirm-order:hover {
+    background: #15803d;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px -1px rgba(22, 163, 74, 0.25);
+  }
+
+  /* ===== FULL SCREEN CONFIRMED MODAL POPUP ===== */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .modal-card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 36px 40px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    text-align: center;
+    transform: scale(0.9);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .modal-overlay.active .modal-card {
+    transform: scale(1);
+  }
+
+  .modal-success-circle {
+    width: 64px;
+    height: 64px;
+    background: #dcfce7;
+    color: #16a34a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    margin: 0 auto 20px;
+    box-shadow: 0 4px 10px rgba(22, 163, 74, 0.12);
+  }
+
+  .modal-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 6px;
+  }
+
+  .modal-subtitle {
+    font-size: 13.5px;
+    color: #64748b;
+    margin-bottom: 24px;
+  }
+
+  /* Modal Details Box matching photo layout */
+  .modal-details-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+  }
+
+  .modal-detail-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13.5px;
+  }
+
+  .modal-detail-row.main-order-id {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 12px;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  .modal-detail-row.main-order-id span {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .modal-detail-row.main-order-id strong {
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: 0.5px;
+  }
+
+  .modal-detail-label {
+    font-weight: 600;
+    color: #64748b;
+  }
+
+  .modal-detail-value {
+    font-weight: 700;
+    color: #0f172a;
+    text-align: right;
+  }
+
+  .btn-modal-close {
+    background: #0f172a;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .btn-modal-close:hover {
+    background: #1e293b;
+  }
+
+  /* Form error block style */
+  .form-error-block {
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #b91c1c;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    display: none;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row">
-  <div class="col-lg-7">
-    <div class="card">
-      <div class="card-header"><h3 class="card-title">Order Details</h3></div>
-      <div class="card-body">
-        <form method="post">
-          {% csrf_token %}
-          <div class="mb-3">
-            <label class="form-label">Draft Person Name</label>
-            <input type="text" name="draft_person_name" class="form-control" placeholder="Name of person placing the order">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Sales Person Name</label>
-            <input type="text" name="sales_person_name" class="form-control">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Courier / Shipping Method</label>
-            <input type="text" name="courier_name" class="form-control" placeholder="e.g. DTDC, BlueDart">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Delivery Note</label>
-            <textarea name="delivery_note" class="form-control" rows="3" placeholder="Any special instructions…"></textarea>
-          </div>
-          <button type="submit" class="btn btn-success w-100">Confirm & Place Order</button>
-        </form>
-      </div>
+<!-- Back to Cart navigation -->
+<a href="{% url 'place_order' %}" class="btn-back-to-cart">
+  <i class="fa-solid fa-arrow-left"></i> Back to Cart
+</a>
+
+<div class="checkout-grid">
+  
+  <!-- LEFT PANEL: Order Information Form -->
+  <div class="form-section-card">
+    <div class="form-card-title">
+      <i class="fa-regular fa-clipboard" style="color: #2563eb;"></i> Order Information
     </div>
+
+    <!-- Error container -->
+    <div id="formErrorContainer" class="form-error-block"></div>
+
+    <form id="checkoutForm" method="post">
+      {% csrf_token %}
+      
+      <div class="form-two-col">
+        <!-- Draft Person Name -->
+        <div class="checkout-form-group">
+          <label class="checkout-form-label">Draft Person Name <span>*</span></label>
+          <div class="checkout-input-wrap">
+            <i class="fa-regular fa-user"></i>
+            <input type="text" name="draft_person_name" id="draftNameInput" class="checkout-input" placeholder="Enter name" required>
+          </div>
+        </div>
+
+        <!-- Courier Dropdown -->
+        <div class="checkout-form-group">
+          <label class="checkout-form-label">Courier Name <span>*</span></label>
+          <div class="checkout-input-wrap">
+            <i class="fa-solid fa-truck" style="left: 13px;"></i>
+            <select name="courier_name" id="courierSelect" class="checkout-input" style="padding-left: 40px;" required>
+              <option value="" disabled selected>Select courier</option>
+              <option value="DTDC">DTDC Courier</option>
+              <option value="BlueDart">BlueDart Express</option>
+              <option value="Professional Couriers">Professional Couriers</option>
+              <option value="Speed Post">Speed Post (EMS)</option>
+              <option value="Self Pickup">Self Pickup / Hand Delivery</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Sales Person Dropdown -->
+        <div class="checkout-form-group">
+          <label class="checkout-form-label">Sales Person Name <span>*</span></label>
+          <div class="checkout-input-wrap">
+            <i class="fa-solid fa-user-group"></i>
+            <select name="sales_person_name" id="salesSelect" class="checkout-input" style="padding-left: 40px;" required>
+              <option value="" disabled selected>Select sales person</option>
+              <option value="Priya Sharma">Priya Sharma</option>
+              <option value="Amit Patel">Amit Patel</option>
+              <option value="Sachin Kumar">Sachin Kumar</option>
+              <option value="Neha Gupta">Neha Gupta</option>
+              <option value="Rajesh Verma">Rajesh Verma</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Order Note (Optional) -->
+        <div class="checkout-form-group full-width">
+          <label class="checkout-form-label">Order Note (Optional)</label>
+          <textarea name="delivery_note" class="checkout-textarea" rows="3" placeholder="Add any special instructions or notes..."></textarea>
+        </div>
+      </div>
+
+      <!-- Instruction note bottom -->
+      <div class="info-note-banner">
+        Note: Please ensure all required fields are filled before placing the order. The draft person and sales person details will be recorded for tracking purposes.
+      </div>
+    </form>
   </div>
-  <div class="col-lg-5">
-    <div class="card">
-      <div class="card-header"><h3 class="card-title">Order Summary</h3></div>
-      <div class="list-group list-group-flush">
+
+  <!-- RIGHT PANEL: Order Summary & Real-time preview -->
+  <div class="summary-section">
+    <div class="summary-card">
+      <div class="summary-title">
+        <i class="fa-solid fa-cart-shopping" style="color: #2563eb;"></i> Order Summary
+      </div>
+
+      <!-- Item Row Scrollbox -->
+      <div class="checkout-items-list">
         {% for item in cart_items %}
-          <div class="list-group-item d-flex justify-content-between">
-            <span>{{ item.product.name }} × {{ item.quantity }}</span>
-            <strong>₹{{ item.line_total }}</strong>
+          <div class="checkout-item-row">
+            <div>
+              <span class="checkout-item-name" title="{{ item.product.name }}">{{ item.product.name }}</span>
+              <span class="checkout-item-qtyprice">{{ item.quantity }} × ₹{{ item.product.selling_price }}</span>
+            </div>
+            <span class="checkout-item-total">₹{{ item.line_total }}</span>
           </div>
         {% endfor %}
       </div>
-      <div class="card-footer d-flex justify-content-between">
-        <strong>Total</strong><strong class="text-success">₹{{ cart_total }}</strong>
+
+      <!-- Totals row -->
+      <div class="checkout-totals-block">
+        <div class="checkout-total-row">
+          <span class="total-label">Total Items:</span>
+          <span class="total-value-qty">{{ cart_count }}</span>
+        </div>
+        <div class="checkout-total-row">
+          <span class="total-amt-label">Total Amount:</span>
+          <span class="total-amt-value" id="orderTotalAmount">₹{{ cart_total }}</span>
+        </div>
       </div>
+
+      <!-- Real-time dynamic details green card preview matching photo -->
+      <div class="live-preview-box">
+        <div class="preview-title">Order Details:</div>
+        <div class="preview-line" id="previewDraft">
+          📝 Draft: <span style="font-weight: 500; font-style: italic; color: #166534;">(empty)</span>
+        </div>
+        <div class="preview-line" id="previewCourier">
+          🚚 Courier: <span style="font-weight: 500; font-style: italic; color: #166534;">(empty)</span>
+        </div>
+        <div class="preview-line" id="previewSales">
+          👤 Sales: <span style="font-weight: 500; font-style: italic; color: #166534;">(empty)</span>
+        </div>
+      </div>
+
+      <!-- Confirm Button -->
+      <button type="button" class="btn-confirm-order" onclick="submitOrder()">
+        <i class="fa-regular fa-circle-check"></i> Confirm Order
+      </button>
+
     </div>
   </div>
+
 </div>
+
+<!-- ===== FULL SCREEN ORDER CONFIRMED OVERLAY MODAL ===== -->
+<div class="modal-overlay" id="orderConfirmedModal">
+  <div class="modal-card">
+    <div class="modal-success-circle">
+      <i class="fa-solid fa-check"></i>
+    </div>
+    
+    <div class="modal-title">Order Confirmed!</div>
+    <div class="modal-subtitle">Your order has been placed successfully</div>
+    
+    <!-- Dynamic Information Box matching photo layout -->
+    <div class="modal-details-box">
+      <div class="modal-detail-row main-order-id">
+        <span>Order ID</span>
+        <strong id="modalOrderID">ORD-2026-00</strong>
+      </div>
+      
+      <div class="modal-detail-row">
+        <span class="modal-detail-label">Draft Person:</span>
+        <span class="modal-detail-value" id="modalDraftPerson">sachin</span>
+      </div>
+      
+      <div class="modal-detail-row">
+        <span class="modal-detail-label">Courier:</span>
+        <span class="modal-detail-value" id="modalCourier">DTDC</span>
+      </div>
+      
+      <div class="modal-detail-row">
+        <span class="modal-detail-label">Sales Person:</span>
+        <span class="modal-detail-value" id="modalSalesPerson">Priya Sharma</span>
+      </div>
+      
+      <div class="modal-detail-row" style="border-top: 1px dashed #cbd5e1; padding-top: 10px; margin-top: 4px;">
+        <span class="modal-detail-label" style="color: #0f172a; font-weight: 700;">Total Amount:</span>
+        <span class="modal-detail-value" style="color: #2563eb; font-weight: 800; font-size: 15px;" id="modalTotalAmount">₹0.00</span>
+      </div>
+    </div>
+    
+    <button class="btn-modal-close" onclick="navigateToDashboard()">OK</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const draftInput = document.getElementById('draftNameInput');
+    const courierSelect = document.getElementById('courierSelect');
+    const salesSelect = document.getElementById('salesSelect');
+
+    // Attach dynamic live-preview event listeners
+    if (draftInput) {
+      draftInput.addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        const element = document.getElementById('previewDraft');
+        if (val) {
+          element.innerHTML = `📝 Draft: <strong style="color: #166534;">${val}</strong>`;
+        } else {
+          element.innerHTML = `📝 Draft: <span style="font-weight: 500; font-style: italic; color: #166534;">(empty)</span>`;
+        }
+      });
+    }
+
+    if (courierSelect) {
+      courierSelect.addEventListener('change', (e) => {
+        const val = e.target.value;
+        const element = document.getElementById('previewCourier');
+        if (val) {
+          element.innerHTML = `🚚 Courier: <strong style="color: #166534;">${val}</strong>`;
+        } else {
+          element.innerHTML = `🚚 Courier: <span style="font-weight: 500; font-style: italic; color: #166534;">(empty)</span>`;
+        }
+      });
+    }
+
+    if (salesSelect) {
+      salesSelect.addEventListener('change', (e) => {
+        const val = e.target.value;
+        const element = document.getElementById('previewSales');
+        if (val) {
+          element.innerHTML = `👤 Sales: <strong style="color: #166534;">${val}</strong>`;
+        } else {
+          element.innerHTML = `👤 Sales: <span style="font-weight: 500; font-style: italic; color: #166534;">(empty)</span>`;
+        }
+      });
+    }
+  });
+
+  // AJAX Submit order functionality
+  function submitOrder() {
+    const form = document.getElementById('checkoutForm');
+    const errContainer = document.getElementById('formErrorContainer');
+    
+    // Reset errors
+    errContainer.style.display = 'none';
+    errContainer.innerText = '';
+
+    // Trigger browser native validation check
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
+    // Prepare form data
+    const formData = new FormData(form);
+    formData.append('ajax', 'true');
+
+    // Send AJAX POST Request
+    fetch('{% url "checkout" %}', {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: formData
+    })
+    .then(res => {
+      if (!res.ok) {
+        throw new Error('Server returned error response');
+      }
+      return res.json();
+    })
+    .then(data => {
+      if (data.success) {
+        // Populate and open confirmed popup modal
+        document.getElementById('modalOrderID').innerText = data.order_id;
+        document.getElementById('modalDraftPerson').innerText = data.draft_person_name;
+        document.getElementById('modalCourier').innerText = data.courier_name;
+        document.getElementById('modalSalesPerson').innerText = data.sales_person_name;
+        
+        // Format Currency inside popup
+        const formattedAmount = parseFloat(data.total_amount).toLocaleString('en-IN', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+        document.getElementById('modalTotalAmount').innerText = '₹' + formattedAmount;
+
+        // Show popup
+        const overlay = document.getElementById('orderConfirmedModal');
+        overlay.classList.add('active');
+      } else {
+        // Show validation error or credit limit error
+        errContainer.innerText = data.error || 'Failed to place order. Please review details.';
+        errContainer.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      errContainer.innerText = 'Connection error. Please check your network and try again.';
+      errContainer.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // Navigation after clicking OK in modal
+  function navigateToDashboard() {
+    window.location.href = '{% url "dashboard" %}';
+  }
+</script>
 {% endblock %}

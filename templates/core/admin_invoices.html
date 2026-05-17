@@ -130,7 +130,7 @@
   }
 
   .btn-primary-custom {
-    background-color: #2563eb;
+    background-color: #f03e3e;
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -141,7 +141,7 @@
   }
   
   .btn-primary-custom:hover {
-    background-color: #1d4ed8;
+    background-color: #e03131;
   }
 
   .search-input {
@@ -159,6 +159,18 @@
     top: 50%;
     transform: translateY(-50%);
     color: #9ca3af;
+  }
+
+  .pagination .page-link {
+    color: #f03e3e;
+  }
+  .pagination .page-link:hover {
+    color: #e03131;
+  }
+  .pagination .page-item.active .page-link {
+    background-color: #f03e3e;
+    border-color: #f03e3e;
+    color: #fff;
   }
 </style>
 {% endblock %}
@@ -263,7 +275,7 @@
           {% for inv in invoices %}
           <tr>
             <td>
-              <div><a href="#" class="inv-number">{{ inv.invoice_number }}</a></div>
+              <div><a href="{% url 'admin_invoice_detail' pk=inv.pk %}" class="inv-number">{{ inv.invoice_number }}</a></div>
               <div class="dist-meta mt-1"><i class="ti ti-shopping-cart text-muted"></i> {{ inv.order.order_id|default:"Manual Invoice" }}</div>
             </td>
             <td>
@@ -289,8 +301,8 @@
               {% endif %}
             </td>
             <td class="text-end">
-              <button class="btn-action-light me-1" title="Download PDF"><i class="ti ti-download text-muted"></i></button>
-              <button class="btn-action-light" title="View Details">Details</button>
+              <a href="{% url 'admin_invoice_download' pk=inv.pk %}" class="btn btn-action-light me-1" title="Download PDF" target="_blank" style="display: inline-flex; align-items: center; justify-content: center; height: 32px;"><i class="ti ti-download text-muted"></i></a>
+              <a href="{% url 'admin_invoice_detail' pk=inv.pk %}" class="btn btn-action-light" title="View Details" style="display: inline-flex; align-items: center; justify-content: center; height: 32px; font-size: 0.8rem; font-weight: 500;">Details</a>
             </td>
           </tr>
           {% empty %}
